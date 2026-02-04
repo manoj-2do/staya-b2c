@@ -73,6 +73,7 @@ export interface HeroWidgetInitialValues {
   dateRange: DateRange;
   rooms: Room[];
   selectedLocation?: LocationSearchResult | null;
+  traceId?: string;
 }
 
 interface HeroWidgetProps {
@@ -165,8 +166,8 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
 
     const hotelIds =
       selectedLocation.type === LocationType.Hotel &&
-      selectedLocation.referenceId &&
-      selectedLocation.referenceId.trim()
+        selectedLocation.referenceId &&
+        selectedLocation.referenceId.trim()
         ? [selectedLocation.referenceId]
         : undefined;
 
@@ -187,6 +188,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
       nationality: "IN",
       occupancies,
       page: 1,
+      traceId: initialValues?.traceId,
     });
 
     setSearchLoading(true);
@@ -194,7 +196,8 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("staya:hotel-search-start"));
       }
-      await new Promise((r) => setTimeout(r, 350));
+
+      // Store payload logic...
       storeSearchPayload(payload);
       const query = new URLSearchParams({
         checkIn: format(checkIn, "yyyy-MM-dd"),
@@ -203,8 +206,19 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
       });
       if (locationId != null) query.set("locationId", String(locationId));
       if (hotelIds?.length) query.set("hotelIds", hotelIds.join(","));
+
       saveLastSearchedDestination(where.trim(), selectedLocation);
+
+      // Wait a small tick to allow UI to transition state
+      await new Promise((r) => setTimeout(r, 100));
+
       updateSearchPath(`${paths.hotelsSearch}?${query.toString()}`);
+
+      // Force path change event to ensure listeners pick it up immediately
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("staya:path-changed"));
+      }
+
     } catch (err) {
       console.error("[HeroWidget] Navigation error:", err);
     } finally {
@@ -232,15 +246,15 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
 
   const addRoom = () => {
     setRooms((prev) => [...prev, { adults: 1, childAges: [] }]);
-    setExpandedRooms((prev) => new Set(Array.from(prev).concat(rooms.length)));
+    setExpandedRooms(new Set([rooms.length]));
   };
 
   const toggleRoomExpanded = (index: number) => {
     setExpandedRooms((prev) => {
-      const next = new Set(Array.from(prev));
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
+      if (prev.has(index)) {
+        return new Set();
+      }
+      return new Set([index]);
     });
   };
 
@@ -377,7 +391,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
   };
 
   return (
-    <div className="rounded-[2rem] overflow-hidden border border-border bg-card shadow-sm">
+    <div className="rounded-[3rem] overflow-hidden border border-border bg-card shadow-sm">
       <form onSubmit={handleSearch} className="flex flex-col lg:flex-row lg:items-stretch">
         {/* Where — user can type and select from list; no focus ring; on dismiss default to first suggestion */}
         <Popover open={whereOpen} onOpenChange={handleWhereOpenChange}>
@@ -531,7 +545,16 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
             <CalendarUi
               mode="range"
               selected={dateRange}
-              onSelect={setDateRange}
+              onSelect={(range, selectedDay) => {
+                // If a full range is already selected (from & to), and user clicks a new date, 
+                // we want to START OVER with that new date as 'from', clearing 'to'.
+                // The default behavior often modifies the existing range extremities.
+                if (dateRange?.from && dateRange?.to && selectedDay) {
+                  setDateRange({ from: selectedDay, to: undefined });
+                } else {
+                  setDateRange(range);
+                }
+              }}
               numberOfMonths={2}
               defaultMonth={dateRange?.from ?? new Date()}
               disabled={disabledDates}
@@ -564,191 +587,196 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
             className="w-[320px] p-4"
             align="center"
             sideOffset={8}
+            onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <div className="flex flex-col gap-1 max-h-[320px] overflow-y-auto">
-              {rooms.map((room, index) => {
-                const isExpanded = expandedRooms.has(index);
-                const guestCount = room.adults + room.childAges.length;
-                return (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-border overflow-hidden"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleRoomExpanded(index)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
+            <div className="flex flex-col max-h-[60vh] overflow-hidden">
+              <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
+                {rooms.map((room, index) => {
+                  const isExpanded = expandedRooms.has(index);
+                  const guestCount = room.adults + room.childAges.length;
+                  return (
+                    <div
+                      key={index}
+                      className="rounded-lg border border-border overflow-hidden shrink-0"
                     >
-                      <span className="flex items-center gap-2 text-sm font-medium">
-                        <BedDouble className="h-4 w-4 text-muted-foreground" />
-                        {content.hero.roomLabel} {index + 1}
-                        <span className="text-muted-foreground font-normal">
-                          ({guestCount} {guestCount === 1 ? "guest" : "guests"})
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        {index > 0 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeRoom(index);
-                            }}
-                            aria-label="Remove room"
-                          >
-                            <X className="h-3.5 w-3.5" strokeWidth={2} />
-                          </Button>
-                        )}
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </span>
-                    </button>
-                    {isExpanded && (
-                      <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border bg-muted/20">
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            {content.hero.adultsLabel}
+                      <button
+                        type="button"
+                        onClick={() => toggleRoomExpanded(index)}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="flex items-center gap-2 text-sm font-medium">
+                          <BedDouble className="h-4 w-4 text-muted-foreground" />
+                          {content.hero.roomLabel} {index + 1}
+                          <span className="text-muted-foreground font-normal">
+                            ({guestCount} {guestCount === 1 ? "guest" : "guests"})
                           </span>
-                          <div className="flex items-center gap-2">
+                        </span>
+                        <span className="flex items-center gap-1">
+                          {index > 0 && (
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => updateRoomAdults(index, -1)}
-                              disabled={room.adults <= 0}
-                              aria-label={`Decrease ${content.hero.adultsLabel}`}
+                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeRoom(index);
+                              }}
+                              aria-label="Remove room"
                             >
-                              <Minus className="h-3.5 w-3.5" />
+                              <X className="h-3.5 w-3.5" strokeWidth={2} />
                             </Button>
-                            <span className="w-6 text-center text-sm tabular-nums">
-                              {room.adults}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => updateRoomAdults(index, 1)}
-                              aria-label={`Increase ${content.hero.adultsLabel}`}
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
+                          )}
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </span>
+                      </button>
+                      {isExpanded && (
+                        <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border bg-muted/20">
                           <div className="flex items-center justify-between gap-4">
                             <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Baby className="h-4 w-4" />
-                              {content.hero.childrenLabel}
+                              <User className="h-4 w-4" />
+                              {content.hero.adultsLabel}
                             </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-xs"
-                              onClick={() => addChild(index)}
-                              aria-label={`Add ${content.hero.child}`}
-                            >
-                              <Plus className="h-3.5 w-3.5 mr-1" />
-                              Add
-                            </Button>
-                          </div>
-                          {room.childAges.length > 0 && (
-                            <div className="space-y-2">
-                              {room.childAges.map((age, childIdx) => (
-                                <div
-                                  key={childIdx}
-                                  className="flex items-center justify-between gap-2"
-                                >
-                                  <span className="text-xs text-muted-foreground">
-                                    {content.hero.child} {childIdx + 1} (age)
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7 rounded-full"
-                                      onClick={() =>
-                                        updateChildAge(index, childIdx, -1)
-                                      }
-                                      disabled={age <= 1}
-                                      aria-label={`Decrease age for child ${childIdx + 1}`}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <span className="w-5 text-center text-sm tabular-nums">
-                                      {age}
-                                    </span>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7 rounded-full"
-                                      onClick={() =>
-                                        updateChildAge(index, childIdx, 1)
-                                      }
-                                      disabled={age >= 17}
-                                      aria-label={`Increase age for child ${childIdx + 1}`}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                      onClick={() => removeChild(index, childIdx)}
-                                      aria-label={`Remove child ${childIdx + 1}`}
-                                    >
-                                      <X className="h-3.5 w-3.5" strokeWidth={2} />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-full"
+                                onClick={() => updateRoomAdults(index, -1)}
+                                disabled={room.adults <= 0}
+                                aria-label={`Decrease ${content.hero.adultsLabel}`}
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </Button>
+                              <span className="w-6 text-center text-sm tabular-nums">
+                                {room.adults}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-full"
+                                onClick={() => updateRoomAdults(index, 1)}
+                                aria-label={`Increase ${content.hero.adultsLabel}`}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
-                          )}
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Baby className="h-4 w-4" />
+                                {content.hero.childrenLabel}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => addChild(index)}
+                                aria-label={`Add ${content.hero.child}`}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                Add
+                              </Button>
+                            </div>
+                            {room.childAges.length > 0 && (
+                              <div className="space-y-2">
+                                {room.childAges.map((age, childIdx) => (
+                                  <div
+                                    key={childIdx}
+                                    className="flex items-center justify-between gap-2"
+                                  >
+                                    <span className="text-xs text-muted-foreground">
+                                      {content.hero.child} {childIdx + 1} (age)
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-full"
+                                        onClick={() =>
+                                          updateChildAge(index, childIdx, -1)
+                                        }
+                                        disabled={age <= 1}
+                                        aria-label={`Decrease age for child ${childIdx + 1}`}
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <span className="w-5 text-center text-sm tabular-nums">
+                                        {age}
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-full"
+                                        onClick={() =>
+                                          updateChildAge(index, childIdx, 1)
+                                        }
+                                        disabled={age >= 17}
+                                        aria-label={`Increase age for child ${childIdx + 1}`}
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={() => removeChild(index, childIdx)}
+                                        aria-label={`Remove child ${childIdx + 1}`}
+                                      >
+                                        <X className="h-3.5 w-3.5" strokeWidth={2} />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full justify-center border border-dashed border-border shrink-0"
-                onClick={addRoom}
-              >
-                {content.hero.addRoom}
-              </Button>
+                      )}
+                    </div>
+                  );
+                })}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-center border border-dashed border-border shrink-0"
+                  onClick={addRoom}
+                >
+                  {content.hero.addRoom}
+                </Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
 
         {/* No divider between Who and Search — remove right border from Guest field */}
         {/* Search — circular, purple */}
-        <div className="p-2 lg:pl-2 lg:pr-2 lg:py-2 flex items-center">
+        {/* Search — circular, purple */}
+        <div className="flex items-center p-1 ml-2">
           <Button
             type="submit"
             variant="default"
             size="icon"
-            className="h-12 w-12 rounded-full shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-12 w-12 rounded-full shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
             aria-label={content.hero.searchButton}
             disabled={searchLoading}
           >
             {searchLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" strokeWidth={iconStroke} aria-hidden />
+              <Loader2 className="h-6 w-6 animate-spin" strokeWidth={2} aria-hidden />
             ) : (
-              <Search className="h-5 w-5" strokeWidth={iconStroke} />
+              <Search className="h-7 w-7" strokeWidth={2.5} />
             )}
           </Button>
         </div>

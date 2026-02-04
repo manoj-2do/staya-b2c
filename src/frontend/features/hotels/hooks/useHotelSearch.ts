@@ -61,7 +61,7 @@ export function useHotelSearch(
       let response: HotelSearchResponse;
 
       if (env.useMockHotelSearch) {
-        await new Promise((r) => setTimeout(r, 600));
+        await new Promise((r) => setTimeout(r, 2000));
         response = getMockHotelSearchResponse(1, 5);
       } else {
         const res = await fetch(apiPaths.hotelSearch, {

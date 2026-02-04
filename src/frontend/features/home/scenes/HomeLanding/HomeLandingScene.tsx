@@ -39,9 +39,9 @@ export function HomeLandingScene() {
   const dateRange =
     checkIn && checkOut
       ? `${checkIn.split("-").slice(1).join("/")} – ${checkOut
-          .split("-")
-          .slice(1)
-          .join("/")}`
+        .split("-")
+        .slice(1)
+        .join("/")}`
       : "";
 
   const heroInitialValues = useMemo((): HeroWidgetInitialValues | undefined => {
@@ -57,20 +57,20 @@ export function HomeLandingScene() {
     const last = getLastSearchedDestination();
     const loc: LocationSearchResult | null = last?.location
       ? {
-          id: last.location.id,
-          name: last.location.fullName.split(",")[0]?.trim() ?? last.location.fullName,
-          fullName: last.location.fullName,
-          type: last.location.type as LocationSearchResult["type"],
-          city: null,
-          state: null,
-          country: last.location.country,
-          coordinates: { lat: 0, long: 0 },
-          referenceId: last.location.referenceId,
-          referenceScore: 0,
-          isTermMatch: false,
-          relevanceScore: 0,
-          travclanScore: null,
-        }
+        id: last.location.id,
+        name: last.location.fullName.split(",")[0]?.trim() ?? last.location.fullName,
+        fullName: last.location.fullName,
+        type: last.location.type as LocationSearchResult["type"],
+        city: null,
+        state: null,
+        country: last.location.country,
+        coordinates: { lat: 0, long: 0 },
+        referenceId: last.location.referenceId,
+        referenceScore: 0,
+        isTermMatch: false,
+        relevanceScore: 0,
+        travclanScore: null,
+      }
       : null;
     if (!from || !to) return undefined;
     return {
@@ -82,6 +82,7 @@ export function HomeLandingScene() {
           childAges: o.childAges ?? [],
         })) ?? [{ adults: 1, childAges: [] }],
       selectedLocation: loc,
+      traceId: payload.traceId,
     };
   }, [isListView, payload, where, checkIn, checkOut]);
 
@@ -109,34 +110,40 @@ export function HomeLandingScene() {
         {/* Hero Section — hidden when list view is shown */}
         <div
           className={cn(
-            "transition-all duration-500 ease-out overflow-hidden",
-            isListView ? "max-h-0 opacity-0" : "max-h-[80vh] opacity-100"
+            "grid transition-all duration-700 ease-out",
+            isListView ? "grid-rows-[0fr] opacity-0 invisible delay-75" : "grid-rows-[1fr] opacity-100 visible"
           )}
+          aria-hidden={isListView}
         >
-          <HeroSection />
+          <div className="overflow-hidden min-w-0">
+            <HeroSection />
+          </div>
         </div>
 
         {/* List View Section — visible after search, fades in */}
         <div
           className={cn(
-            "transition-all duration-500 ease-out",
-            isListView ? "opacity-100 animate-in fade-in duration-300" : "opacity-0 h-0 overflow-hidden"
+            "grid transition-all duration-500 ease-in-out",
+            isListView ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           )}
+          aria-hidden={!isListView}
         >
-          {searchView === "hotels" && (
-            <HotelListView
-              payload={payload}
-              checkIn={checkIn}
-              checkOut={checkOut}
-              parentRef={parentRef}
-            />
-          )}
-          {searchView === "flights" && <FlightsListView />}
-          {searchView === "packages" && <PackagesListView />}
+          <div className="overflow-hidden min-w-0">
+            {searchView === "hotels" && (
+              <HotelListView
+                payload={payload}
+                checkIn={checkIn}
+                checkOut={checkOut}
+                parentRef={parentRef}
+              />
+            )}
+            {searchView === "flights" && <FlightsListView />}
+            {searchView === "packages" && <PackagesListView />}
+          </div>
         </div>
       </main>
 
-      <ExpiredSearchPopup open={false} onDismiss={() => {}} />
-    </div>
+      <ExpiredSearchPopup open={false} onDismiss={() => { }} />
+    </div >
   );
 }

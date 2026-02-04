@@ -24,7 +24,8 @@ export function useLocationSearch(
   const apiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const callApi = useCallback(async (query: string) => {
-    if (!query.trim()) {
+    const queryTrimmed = query.trim();
+    if (!queryTrimmed) {
       setResults([]);
       setLoading(false);
       setError(null);
@@ -32,7 +33,7 @@ export function useLocationSearch(
     }
     setLoading(true);
     setError(null);
-    const outcome = await locationsSearchAction(query);
+    const outcome = await locationsSearchAction(queryTrimmed);
     setLoading(false);
     if (outcome.ok) {
       setResults(outcome.results);

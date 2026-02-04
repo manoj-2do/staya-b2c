@@ -36,14 +36,14 @@ export function HotelCard({
   const dateRange =
     checkIn && checkOut
       ? (() => {
-          try {
-            const from = parseISO(checkIn);
-            const to = parseISO(checkOut);
-            return `${format(from, "d")}-${format(to, "d MMM")}`;
-          } catch {
-            return null;
-          }
-        })()
+        try {
+          const from = parseISO(checkIn);
+          const to = parseISO(checkOut);
+          return `${format(from, "d")}-${format(to, "d MMM")}`;
+        } catch {
+          return null;
+        }
+      })()
       : null;
 
   return (
@@ -65,22 +65,6 @@ export function HotelCard({
           <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm">
             Guest favourite
           </span>
-        </div>
-        <button
-          type="button"
-          className="absolute right-3 top-3 rounded-full p-2 bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
-          aria-label="Save to favourites"
-        >
-          <Heart className="h-4 w-4 text-foreground" strokeWidth={1.5} />
-        </button>
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-          {[1, 2, 3, 4].map((i) => (
-            <span
-              key={i}
-              className="h-1.5 w-1.5 rounded-full bg-white/80"
-              aria-hidden
-            />
-          ))}
         </div>
       </div>
 
@@ -116,8 +100,8 @@ export function HotelCard({
               </span>
             )}
             {hotel.isRefundable !== false && (
-              <span title="Refundable" className="flex items-center">
-                <RefreshCw className="h-3.5 w-3.5" />
+              <span title="Refundable" className="flex items-center justify-center h-4 w-4 rounded-full border border-emerald-500 text-[10px] font-bold text-emerald-600 bg-emerald-50">
+                R
               </span>
             )}
           </div>

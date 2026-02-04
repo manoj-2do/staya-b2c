@@ -172,16 +172,9 @@ export function HotelResultsScene() {
         )}
       </main>
 
-      <div className="fixed bottom-6 right-6">
-        <Button variant="secondary" className="shadow-lg gap-2">
-          <MapPin className="h-4 w-4" />
-          {content.hotelResults.showMap}
-        </Button>
-      </div>
-
       <ExpiredSearchPopup
         open={false}
-        onDismiss={() => {}}
+        onDismiss={() => { }}
       />
     </div>
   );
