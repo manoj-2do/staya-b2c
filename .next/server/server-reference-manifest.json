@@ -1,5 +1,22 @@
 {
-  "node": {},
+  "node": {
+    "ed498799d25e4233473fde5a879cbc501d6bf0ae": {
+      "workers": {
+        "app/[[...slug]]/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmanoj2do%2FDesktop%2F_%2Fstaya-b2c%2Fsrc%2Fbackend%2Fauth%2FloginAction.ts%22%2C%5B%22loginAction%22%5D%5D%2C%5B%22%2FUsers%2Fmanoj2do%2FDesktop%2F_%2Fstaya-b2c%2Fsrc%2Fbackend%2Fauth%2FrefreshAction.ts%22%2C%5B%22refreshAction%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/[[...slug]]/page": "action-browser"
+      }
+    },
+    "4531b7fc1e8760e6b21d3980c372814b7fb463a4": {
+      "workers": {
+        "app/[[...slug]]/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmanoj2do%2FDesktop%2F_%2Fstaya-b2c%2Fsrc%2Fbackend%2Fauth%2FloginAction.ts%22%2C%5B%22loginAction%22%5D%5D%2C%5B%22%2FUsers%2Fmanoj2do%2FDesktop%2F_%2Fstaya-b2c%2Fsrc%2Fbackend%2Fauth%2FrefreshAction.ts%22%2C%5B%22refreshAction%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/[[...slug]]/page": "action-browser"
+      }
+    }
+  },
   "edge": {},
-  "encryptionKey": "Pbkr+KqR+iIRGD0oKDpDndnLLGNFIMs9kNKG0koBpbU="
+  "encryptionKey": "tfnQIOWF31qvze2+0jMjtvjroGVmmwkYBvLnlwGWKO4="
 }

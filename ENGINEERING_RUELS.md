@@ -30,14 +30,14 @@
 12. Never modify or overwrite `.env` files without explicit confirmation.  
 13. Do not access `process.env` directly inside features or components.  
 14. Always use the centralized configuration from:  
-   `src/lib/config/env.ts`
+   `src/frontend/core/config/env.ts`
 
 ---
 
 ## Content & Localisation Rules
 
 17. **Do not hardcode user-facing strings or image URLs** in components or pages.  
-18. Keep all copy and asset references in a **separate content file** (e.g. `src/lib/content.ts` or per-locale files under `src/lib/`) so localisation can be introduced later without touching UI code.  
+18. Keep all copy and asset references in a **separate content file** (e.g. `src/frontend/core/content.ts` or per-locale files under `src/frontend/core/`) so localisation can be introduced later without touching UI code.  
 19. Components and pages must read text and image URLs from this content layer, not from inline literals.
 
 ---

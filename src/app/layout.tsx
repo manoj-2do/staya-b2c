@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import React, { type ReactNode } from "react";
-import { content } from "../lib/content";
-import { NetworkStatusBar } from "../lib/components/NetworkStatusBar";
+import { appConfig } from "@/frontend/core/app.config";
+import { content } from "@/frontend/core/content";
+import { NetworkStatusBar } from "@/frontend/core/components/NetworkStatusBar";
+import { AuthProvider } from "@/frontend/features/auth/context/AuthContext";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -13,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: `${content.app.name} — ${content.app.tagline}`,
+  title: `${appConfig.appName} — ${content.app.tagline}`,
   description: content.app.description,
 };
 
@@ -25,8 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={dmSans.variable}>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
-        <NetworkStatusBar />
-        {children}
+        <AuthProvider>
+          <NetworkStatusBar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

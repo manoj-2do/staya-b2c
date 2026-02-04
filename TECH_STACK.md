@@ -79,7 +79,7 @@ The project must include:
 ### Environment Access Rules
 
 All environment variables must be accessed through:
-src/lib/config/env.ts
+src/frontend/core/config/env.ts
 
 This file centralizes configuration and prevents direct environment access in random parts of the application.
 
