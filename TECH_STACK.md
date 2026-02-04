@@ -57,7 +57,7 @@ Shared Layer | Reusable utilities, hooks, and components |
 ---
 
 ## Feature-First Folder Structure
-All product functionality lives inside:
+All product functionality lives inside **src/** and follows the feature-wise folder structure template below (each feature has `scenes/`, `components/`, `hooks/`, `services/`, `models/`, `utils/`, and `index.ts`).
 
 ---
 
@@ -94,3 +94,39 @@ Example structure:
 - Variables prefixed with `NEXT_PUBLIC_` may be used in the browser
 - Secret keys must only be used server-side
 - Never expose private keys in client components
+
+### Feature wise folder structure template 
+
+features/
+└── hotels/
+    │
+    ├── scenes/                          # Each user step = isolated scene
+    │   ├── HotelSearch/
+    │   │   ├── components/               # UI only for HotelSearch
+    │   │   ├── hooks/                    # Hooks only HotelSearch needs
+    │   │   ├── services/                 # API logic only for this scene
+    │   │   ├── types/                    # Scene-specific types
+    │   │   └── HotelSearchScene.tsx
+    │   │
+    |   └──...
+    │   
+    │
+    ├── components/                      # Shared across ALL hotel scenes
+    │   ├── HotelCard.tsx
+    │   └── HotelImageGallery.tsx
+    │
+    ├── hooks/                           # Feature-wide hooks
+    │   └── useHotelFilters.ts
+    │
+    ├── services/                        # Feature-wide API logic
+    │   └── hotelApi.ts
+    │
+    ├── models/                          # Feature-wide domain models
+    │   ├── Hotel.ts
+    │   ├── Room.ts
+    │   └── Booking.ts
+    │
+    ├── utils/                           # Helpers only Hotels use
+    │   └── priceFormat.ts
+    │
+    └── index.ts                         # Public exports for feature

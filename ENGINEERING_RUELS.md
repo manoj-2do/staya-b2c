@@ -34,6 +34,14 @@
 
 ---
 
+## Content & Localisation Rules
+
+17. **Do not hardcode user-facing strings or image URLs** in components or pages.  
+18. Keep all copy and asset references in a **separate content file** (e.g. `src/lib/content.ts` or per-locale files under `src/lib/`) so localisation can be introduced later without touching UI code.  
+19. Components and pages must read text and image URLs from this content layer, not from inline literals.
+
+---
+
 ## Test Data Rules
 
 15. Mocking and stubbing are allowed **only in test files**.  
