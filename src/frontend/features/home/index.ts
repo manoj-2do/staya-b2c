@@ -4,3 +4,8 @@
  */
 
 export { HomeLandingScene } from "./scenes/HomeLanding/HomeLandingScene";
+export type {
+  LocationSearchResult,
+  LocationSearchResponse,
+  LocationSearchCoordinates,
+} from "./models/LocationSearch";

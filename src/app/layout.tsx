@@ -4,7 +4,6 @@ import React, { type ReactNode } from "react";
 import { appConfig } from "@/frontend/core/app.config";
 import { content } from "@/frontend/core/content";
 import { NetworkStatusBar } from "@/frontend/core/components/NetworkStatusBar";
-import { AuthProvider } from "@/frontend/features/auth/context/AuthContext";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -27,10 +26,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={dmSans.variable}>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
-        <AuthProvider>
-          <NetworkStatusBar />
-          {children}
-        </AuthProvider>
+        <NetworkStatusBar />
+        {children}
       </body>
     </html>
   );

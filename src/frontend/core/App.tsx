@@ -10,7 +10,6 @@ interface AppProps {
 
 /**
  * Main app component: resolves current path and renders the screen from routes config.
- * Wrap with AuthProvider in layout; middleware handles redirects and protected routes.
  */
 export function App({ initialPath }: AppProps) {
   const pathname = usePathname();

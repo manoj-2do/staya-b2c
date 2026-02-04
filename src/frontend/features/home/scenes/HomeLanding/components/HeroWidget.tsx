@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { MapPin, Calendar, Users, Search, Plus, Minus } from "lucide-react";
+import { MapPin, Calendar, Users, Search, Plus, Minus, Loader2 } from "lucide-react";
 import { content } from "@/frontend/core/content";
 import { dispatchOfflineActionToast } from "@/frontend/core/components/NetworkStatusBar";
 import { Button } from "@/frontend/components/ui/button";
@@ -15,6 +15,31 @@ import { Calendar as CalendarUi } from "@/frontend/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 import { format, startOfDay, addDays } from "date-fns";
 import { cn } from "@/frontend/core/utils";
+import type { LocationSearchResult } from "@/frontend/features/home/models/LocationSearch";
+import { LocationType } from "@/frontend/features/home/models/LocationSearch";
+import { useLocationSearch } from "@/frontend/features/home/hooks/useLocationSearch";
+
+/** Badge accent by location type: green | purple | blue. */
+function getLocationTypeBadgeClass(type: string): string {
+  const base = "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium";
+  switch (type) {
+    case LocationType.City:
+    case LocationType.Neighborhood:
+    case LocationType.Region:
+      return `${base} bg-emerald-500/15 text-emerald-700 dark:text-emerald-400`;
+    case LocationType.Hotel:
+    case LocationType.PointOfInterest:
+    case LocationType.MultiCity:
+      return `${base} bg-violet-500/15 text-violet-700 dark:text-violet-400`;
+    case LocationType.Airport:
+    case LocationType.Country:
+    case LocationType.State:
+    case LocationType.TrainStation:
+    case LocationType.Undefined:
+    default:
+      return `${base} bg-blue-500/15 text-blue-700 dark:text-blue-400`;
+  }
+}
 
 const iconClass = "h-4 w-4 shrink-0 text-muted-foreground";
 const iconStroke = 1.5;
@@ -42,6 +67,12 @@ export function HeroWidget() {
 
   const [where, setWhere] = useState("");
   const whereInputRef = useRef<HTMLInputElement>(null);
+  const whereAnchorRef = useRef<HTMLDivElement>(null);
+  const whereOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const whereOptionCountRef = useRef(0);
+  const [whereHighlightedIndex, setWhereHighlightedIndex] = useState(-1);
+  const [selectedLocation, setSelectedLocation] = useState<LocationSearchResult | null>(null);
+  const { results: locationResults, loading: locationLoading } = useLocationSearch(where, 300);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
     DATE_PICKER_CONFIG.getDefaultRange
   );
@@ -70,12 +101,11 @@ export function HeroWidget() {
     (sum, r) => sum + r.adults + r.children,
     0
   );
+  const roomCount = rooms.length;
   const whoLabel =
-    totalGuests === 0
+    roomCount === 0 && totalGuests === 0
       ? content.hero.whoPlaceholder
-      : totalGuests === 1
-        ? "1 Guest"
-        : `${totalGuests} Guests`;
+      : `${roomCount} ${roomCount === 1 ? "Room" : "Rooms"} | ${totalGuests} ${totalGuests === 1 ? "Guest" : "Guests"}`;
 
   const addRoom = () => {
     setRooms((prev) => [...prev, { adults: 1, children: 0 }]);
@@ -94,13 +124,78 @@ export function HeroWidget() {
     });
   };
 
-  /** On Where popover close without selection: default to first suggestion. */
+  /** On Where popover close: if they had picked a result, keep it; if dropdown was empty, clear the field (no default text). */
   const handleWhereOpenChange = (open: boolean) => {
     if (!open) {
-      const first = content.hero.whereSuggestions[0];
-      if (first) setWhere(first);
+      setWhereHighlightedIndex(-1);
+      const firstResult = locationResults[0];
+      if (firstResult) {
+        setSelectedLocation(firstResult);
+        setWhere(firstResult.fullName);
+      } else {
+        setSelectedLocation(null);
+        setWhere("");
+      }
     }
     setWhereOpen(open);
+  };
+
+  const hasSearchQuery = where.trim().length > 0;
+  const isLocationResults = locationResults.length > 0;
+  const showEmptyState = hasSearchQuery && !locationLoading && !isLocationResults;
+  const whereOptionCount = isLocationResults ? locationResults.length : 0;
+  const wherePopoverWide = isLocationResults;
+  const wherePopoverWidthClass = wherePopoverWide
+    ? "w-[calc(var(--radix-popover-trigger-width)*1.9)]"
+    : "w-[200px]";
+  if (whereOptionCountRef.current !== whereOptionCount) {
+    whereOptionCountRef.current = whereOptionCount;
+    whereOptionRefs.current = [];
+  }
+
+  const handleWhereKeyDown = (e: React.KeyboardEvent) => {
+    if (!whereOpen || whereOptionCount === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = whereHighlightedIndex < whereOptionCount - 1 ? whereHighlightedIndex + 1 : 0;
+      setWhereHighlightedIndex(next);
+      whereOptionRefs.current[next]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = whereHighlightedIndex <= 0 ? whereOptionCount - 1 : whereHighlightedIndex - 1;
+      setWhereHighlightedIndex(prev);
+      whereOptionRefs.current[prev]?.focus();
+    } else if (e.key === "Enter" && whereHighlightedIndex >= 0 && locationResults[whereHighlightedIndex]) {
+      e.preventDefault();
+      const item = locationResults[whereHighlightedIndex];
+      setSelectedLocation(item);
+      setWhere(item.fullName);
+      setWhereOpen(false);
+      whereInputRef.current?.focus();
+    }
+  };
+
+  const handleWhereOptionKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = index < whereOptionCount - 1 ? index + 1 : 0;
+      setWhereHighlightedIndex(next);
+      whereOptionRefs.current[next]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = index <= 0 ? whereOptionCount - 1 : index - 1;
+      setWhereHighlightedIndex(prev);
+      whereOptionRefs.current[prev]?.focus();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const item = locationResults[index];
+      if (item) {
+        setSelectedLocation(item);
+        setWhere(item.fullName);
+        setWhereOpen(false);
+        whereInputRef.current?.focus();
+      }
+    }
   };
 
   return (
@@ -110,11 +205,15 @@ export function HeroWidget() {
         <Popover open={whereOpen} onOpenChange={handleWhereOpenChange}>
           <PopoverAnchor asChild>
             <div
+              ref={whereAnchorRef}
               role="combobox"
               aria-expanded={whereOpen}
               aria-haspopup="listbox"
               aria-label={content.hero.whereLabel}
-              onClick={() => whereInputRef.current?.focus()}
+              onClick={(e) => {
+                e.preventDefault();
+                whereInputRef.current?.focus();
+              }}
               className="flex flex-1 min-w-0 flex items-center gap-3 pl-4 pr-3 py-3 lg:py-4 lg:min-h-[56px] bg-transparent hover:bg-muted/30 transition-colors rounded-none rounded-l-[2rem] cursor-text"
             >
               <MapPin className={iconClass} strokeWidth={iconStroke} />
@@ -122,9 +221,24 @@ export function HeroWidget() {
                 ref={whereInputRef}
                 type="text"
                 value={where}
-                onChange={(e) => setWhere(e.target.value)}
-                onFocus={() => setWhereOpen(true)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setWhere(value);
+                  if (value.trim().length > 0) {
+                    setWhereOpen(true);
+                  } else {
+                    setWhereOpen(false);
+                  }
+                  requestAnimationFrame(() => whereInputRef.current?.focus());
+                }}
                 placeholder={content.hero.wherePlaceholder}
+                autoComplete="off"
+                onFocus={(e) => {
+                  const el = e.target as HTMLInputElement;
+                  const len = el.value.length;
+                  el.setSelectionRange(len, len);
+                }}
+                onKeyDown={handleWhereKeyDown}
                 className={cn(
                   "flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 )}
@@ -134,30 +248,72 @@ export function HeroWidget() {
             </div>
           </PopoverAnchor>
           <PopoverContent
-            className="w-[var(--radix-popover-trigger-width)] p-0"
+            className={cn(wherePopoverWidthClass, "p-0")}
             align="start"
             sideOffset={8}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onPointerDownOutside={(e) => {
+              if (whereAnchorRef.current?.contains(e.target as Node)) {
+                e.preventDefault();
+              }
+            }}
           >
             <ul
               id="where-listbox"
               role="listbox"
-              className="max-h-[280px] overflow-auto py-2"
+              className="max-h-[280px] overflow-auto py-2 divide-y divide-border"
               aria-label={content.hero.whereLabel}
             >
-              {content.hero.whereSuggestions.map((suggestion) => (
-                <li key={suggestion} role="option">
-                  <button
-                    type="button"
-                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-muted/80 focus:bg-muted/80 outline-none"
-                    onClick={() => {
-                      setWhere(suggestion);
-                      setWhereOpen(false);
-                    }}
-                  >
-                    {suggestion}
-                  </button>
+              {locationLoading ? (
+                <li className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground" role="status" aria-busy="true">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Searching…
                 </li>
-              ))}
+              ) : showEmptyState ? (
+                <li className="px-4 py-6 text-sm text-muted-foreground text-center">
+                  No Results found.
+                </li>
+              ) : isLocationResults ? (
+                locationResults.map((item, index) => (
+                  <li
+                    key={item.fullName + (item.referenceId ?? item.id ?? "")}
+                    role="option"
+                    aria-selected={whereHighlightedIndex === index}
+                  >
+                    <button
+                      ref={(el) => {
+                        (whereOptionRefs.current as (HTMLButtonElement | null)[])[index] = el;
+                      }}
+                      type="button"
+                      className="w-full px-5 py-3.5 flex flex-col items-stretch gap-2 text-left text-sm hover:bg-muted/80 focus:bg-muted/80 focus:outline-none focus-visible:outline-none"
+                      onClick={() => {
+                        setSelectedLocation(item);
+                        setWhere(item.fullName);
+                        setWhereOpen(false);
+                      }}
+                      onKeyDown={(e) => handleWhereOptionKeyDown(e, index)}
+                    >
+                      <span className="font-medium truncate min-w-0">{item.fullName}</span>
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        {item.type && (
+                          <span className={getLocationTypeBadgeClass(item.type)}>
+                            {item.type}
+                          </span>
+                        )}
+                        {item.country && (
+                          <span className="text-muted-foreground text-xs truncate">
+                            {item.country}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-6 text-sm text-muted-foreground text-center">
+                  Type to search for a destination
+                </li>
+              )}
             </ul>
           </PopoverContent>
         </Popover>
@@ -189,7 +345,7 @@ export function HeroWidget() {
           </PopoverTrigger>
           <PopoverContent
             className="w-auto p-0"
-            align="start"
+            align="center"
             sideOffset={8}
           >
             <CalendarUi
@@ -226,7 +382,7 @@ export function HeroWidget() {
           </PopoverTrigger>
           <PopoverContent
             className="w-[320px] p-4"
-            align="start"
+            align="center"
             sideOffset={8}
           >
             <div className="space-y-4">

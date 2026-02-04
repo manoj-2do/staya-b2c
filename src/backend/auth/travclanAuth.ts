@@ -1,15 +1,15 @@
 /**
  * Backend — server-side only.
- * Calls TravClan Auth API (login + refresh). Server cache for tokens.
+ * Calls TravClan Auth API (login + refresh). Tokens are cached in memory and persisted to a file so they survive restarts.
  */
 
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { join } from "path";
 import { env } from "@/frontend/core/config/env";
 
 export interface TravClanAuthResponse {
-  access_token?: string;
-  refresh_token?: string;
-  token_type?: string;
-  expires_in?: number;
+  AccessToken?: string;
+  RefreshToken?: string;
   [key: string]: unknown;
 }
 
@@ -21,15 +21,57 @@ export interface TravClanAuthError {
 
 const SERVER_TOKEN_CACHE_KEY = "travclan_app";
 
+function getTokensFilePath(): string {
+  return join(process.cwd(), ".travclan-tokens.json");
+}
+
+function loadTokensFromFile(): TravClanAuthResponse | null {
+  try {
+    const path = getTokensFilePath();
+    if (!existsSync(path)) return null;
+    const raw = readFileSync(path, "utf-8");
+    const data = JSON.parse(raw) as TravClanAuthResponse;
+    if (!data || typeof data !== "object") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function saveTokensToFile(data: TravClanAuthResponse): void {
+  try {
+    writeFileSync(getTokensFilePath(), JSON.stringify(data, null, 0), "utf-8");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[BE] Tokens saved to", getTokensFilePath());
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[BE] Could not save tokens to file:", err);
+    }
+  }
+}
+
 /** In-memory server cache for tokens (set after login/refresh). */
 const serverTokenCache = new Map<string, TravClanAuthResponse>();
 
 export function setServerTokenCache(data: TravClanAuthResponse): void {
   serverTokenCache.set(SERVER_TOKEN_CACHE_KEY, data);
+  saveTokensToFile(data);
 }
 
+/** Returns tokens from memory, or loads from file if memory is empty. Only calls login when no tokens present. */
 export function getCachedTokens(): TravClanAuthResponse | null {
-  return serverTokenCache.get(SERVER_TOKEN_CACHE_KEY) ?? null;
+  let tokens = serverTokenCache.get(SERVER_TOKEN_CACHE_KEY) ?? null;
+  if (!tokens) {
+    tokens = loadTokensFromFile();
+    if (tokens) {
+      serverTokenCache.set(SERVER_TOKEN_CACHE_KEY, tokens);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[BE] Tokens loaded from file");
+      }
+    }
+  }
+  return tokens;
 }
 
 function getAuthUrl(): string {
@@ -229,3 +271,4 @@ export async function refreshAppToken(
     };
   }
 }
+
