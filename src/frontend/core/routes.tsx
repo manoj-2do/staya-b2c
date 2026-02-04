@@ -12,6 +12,10 @@ export type RouteScreen = ComponentType;
 const pathToScreen: Record<string, RouteScreen> = {
   "/": HomeLandingScene,
   "/home": HomeLandingScene,
+  "/hotels": HomeLandingScene,
+  "/hotels/search": HomeLandingScene,
+  "/flights/search": HomeLandingScene,
+  "/packages/search": HomeLandingScene,
 };
 
 /** Get the screen component for a path, or null if not found */

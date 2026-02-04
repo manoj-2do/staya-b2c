@@ -6,10 +6,17 @@
 export const paths = {
   home: "/",
   homePage: "/home",
-  // Add more as routes are added, e.g.:
-  // hotels: "/hotels",
-  // flights: "/flights",
-  // auth: { login: "/login", signUp: "/signup" },
+  hotels: "/hotels",
+  hotelsSearch: "/hotels/search",
+  flightsSearch: "/flights/search",
+  packagesSearch: "/packages/search",
+} as const;
+
+/** Category to search path mapping */
+export const categorySearchPaths = {
+  hotel: "/hotels/search",
+  flights: "/flights/search",
+  packages: "/packages/search",
 } as const;
 
 export type PathKey = keyof typeof paths;

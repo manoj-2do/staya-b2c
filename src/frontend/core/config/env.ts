@@ -6,6 +6,9 @@
  */
 
 export const env = {
+  /** Mock hotel search — set NEXT_PUBLIC_USE_MOCK_HOTEL_SEARCH=true to use mock data */
+  useMockHotelSearch: process.env.NEXT_PUBLIC_USE_MOCK_HOTEL_SEARCH === "true",
+
   /** TravClan — server-side only, used by API routes */
   travclan: {
     apiKey: process.env.TRAVCLAN_API_KEY ?? "",

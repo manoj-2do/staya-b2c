@@ -5,6 +5,7 @@
 
 import { env } from "@/frontend/core/config/env";
 import { request } from "@/backend/network/requestManager";
+import { travclanPaths } from "@/backend/apiPaths";
 import type {
   LocationSearchResponse,
   LocationSearchResult,
@@ -33,7 +34,7 @@ export async function getLocationsSearch(
   searchString: string
 ): Promise<GetLocationsSearchResult> {
   const base = (env.travclan.apiBaseUrl ?? "").replace(/\/$/, "");
-  const path = "api/v1/locations/search/";
+  const path = travclanPaths.locationsSearch;
   const url = buildSearchUrl(base, path, searchString);
 
   const result = await request<

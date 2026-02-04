@@ -9,14 +9,18 @@ import type { TravClanAuthResponse } from "@/backend/auth/travclanAuth";
 
 const SEP = "────────────────────────────────────────────────────────";
 
-function getAccessTokenFromTokens(tokens: TravClanAuthResponse | null): string | null {
+function getAccessTokenFromTokens(
+  tokens: TravClanAuthResponse | null
+): string | null {
   if (!tokens) return null;
   const t = tokens as Record<string, unknown>;
   const v = t.access_token ?? t.AccessToken;
   return typeof v === "string" ? v : null;
 }
 
-function getRefreshTokenFromTokens(tokens: TravClanAuthResponse | null): string | null {
+function getRefreshTokenFromTokens(
+  tokens: TravClanAuthResponse | null
+): string | null {
   if (!tokens) return null;
   const t = tokens as Record<string, unknown>;
   const v = t.refresh_token ?? t.RefreshToken;
@@ -58,21 +62,38 @@ export interface RequestResult<T = unknown> {
   errorBody?: unknown;
 }
 
-function logRequest(method: string, url: string, headers: Record<string, string>, hasBody?: boolean): void {
+function logRequest(
+  method: string,
+  url: string,
+  headers: Record<string, string>,
+  hasBody?: boolean
+): void {
   const curlLines = [
     `curl -X ${method.toUpperCase()} '${url}'`,
     ...Object.entries(headers).map(
       ([k, v]) =>
-        `  -H '${k}: ${k === "Authorization" && String(v).startsWith("Bearer ") ? "Bearer ***" : v}'`
+        `  -H '${k}: ${
+          k === "Authorization" && String(v).startsWith("Bearer ")
+            ? "Bearer ***"
+            : v
+        }'`
     ),
   ];
   if (hasBody) curlLines.push(`  -d '...'`);
   const curl = curlLines.join(" \\\n");
-  console.log(`\n${SEP}\n[BE] requestManager — Request (curl)\n${SEP}\n${curl}\n${SEP}`);
+  console.log(
+    `\n${SEP}\n[BE] requestManager — Request (curl)\n${SEP}\n${curl}\n${SEP}`
+  );
 }
 
-function logResponse(label: string, status: number, errorBody?: unknown): void {
-  const summary = errorBody != null ? { status, body: errorBody } : { status };
+function logResponse(
+  label: string,
+  status: number,
+  data?: unknown,
+  errorBody?: unknown
+): void {
+  const summary =
+    errorBody != null ? { status, body: errorBody } : { status, data };
   console.log(`[BE] requestManager — ${label} →`, JSON.stringify(summary));
 }
 
@@ -105,7 +126,12 @@ export async function request<T = unknown>(
 
     const data = await res.json().catch(() => ({}));
 
-    logResponse("Response", res.status, res.ok ? undefined : data);
+    logResponse(
+      "Response",
+      res.status,
+      res.ok ? data : undefined,
+      res.ok ? undefined : data
+    );
 
     if (res.status === 401) {
       const refreshed = await refreshAndSaveToken();
@@ -124,7 +150,12 @@ export async function request<T = unknown>(
             next: { revalidate: 0 },
           });
           const retryData = await retryRes.json().catch(() => ({}));
-          logResponse("Retry response", retryRes.status, retryRes.ok ? undefined : retryData);
+          logResponse(
+            "Retry response",
+            retryRes.status,
+            retryRes.ok ? retryData : undefined,
+            retryRes.ok ? undefined : retryData
+          );
           if (retryRes.ok) {
             return { status: retryRes.status, data: retryData as T };
           }

@@ -82,6 +82,19 @@ export const content = {
     child: "Child",
   },
 
+  /** Hotel results */
+  hotelResults: {
+    emptyTitle: "No hotels found",
+    emptyMessage: "Try adjusting your search or filters to find more options.",
+    loadingMore: "Loading more…",
+    showMap: "Show map",
+  },
+
+  /** Validation toasts */
+  validation: {
+    selectDestination: "Please select a hotel",
+  },
+
   /** Network status (global) */
   network: {
     offlineMessage: "You're offline. Some features may not work.",

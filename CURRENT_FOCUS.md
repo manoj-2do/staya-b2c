@@ -1,19 +1,90 @@
-# Current Focus — Homescreen & API Integration
+# Home Landing Page Behavior Enhancement
 
-## Structure (backend vs frontend)
-- **`src/backend/`** — Server-side only. **App token (auth) call** happens here: `getAppToken()` in `auth/travclanAuth.ts`. Server action `loginAction` calls it; frontend auth service invokes the action. No `app/api` folder.
-- **`src/frontend/`** — Client-side code: `core/` (content, assets, utils, config, paths), `features/` (auth, home), `components/` (UI). **AuthProvider** wraps every route in root layout. Auth feature calls backend `loginAction`, stores tokens in `localStorage`; **all other API calls** are made from the client using the token.
+## Objective
+Enhance the **Home Landing** page so that when a search is performed for any category (Hotel, Flights, Packages):
 
-## App Router: paths & middleware
-- **`src/frontend/core/paths.ts`** — Route path constants; use in middleware and links.
-- **`src/middleware.ts`** — Runs on every request; use for auth redirects, headers. Imports `paths` from core. AuthProvider in layout handles client-side auth context.
+- The corresponding **list view section** is displayed below the search widget.
+- The **Hero section** is hidden.
+- The **browser path updates** to reflect the category search.
+- **Logo, “More” options, and search icon** remain visible.
+- All changes occur **without routing** or page reloads.
+- Folder structure must remain unchanged.
 
-## Done
-- Env: TravClan in `src/frontend/core/config/env.ts` and `.env.example`.
-- Backend auth: TravClan app token in `src/backend/auth/travclanAuth.ts`; `loginAction` (server action) uses it.
-- Frontend auth: `src/frontend/features/auth/` — types, `authService`, `useAuthLogin`, **AuthProvider** / **useAuth**; token stored in client.
-- **lib → core**: Renamed and moved to `src/frontend/core/` (content, assets, utils, config, components).
+---
 
-## Next
-- Wire login into UI (e.g. header or sign-in flow).
-- Client-side TravClan API calls (hotel/search, etc.) using stored token.
+## Page Structure
+
+Home View
+│
+├─ Header
+│ └─ Category Widget with Search Form (search icon stays constant)
+│
+├─ Hero Section
+│ └─ Home Data (can be blank initially)
+│
+└─ List View Section (Hotel / Flights / Packages)
+└─ Initially hidden
+
+
+---
+
+## Behavior on Search
+
+1. **User Action**
+   - User selects a category (Hotel / Flights / Packages) in the category widget.
+   - User clicks the **Search** button.
+
+2. **Page Updates**
+   - **Hero Section** → Hide smoothly.
+   - **Corresponding List View Section** → Make **visible** below the search widget:
+     - Hotel → `home/hotel-list`
+     - Flights → `home/flights-list`
+     - Packages → `home/packages-list`
+   - **Header / Category Widget** → Remains visible.
+     - Search icon remains **constant**.
+   - **Logo and “More” options** → Remain visible.
+   - **Browser path** → Update according to category:
+     - Hotels → `/hotels/search`
+     - Flights → `/flights/search`
+     - Packages → `/packages/search`
+   - **No routing or page reload**.
+
+3. **Animation / Transition**
+   - Category widget → **Fade out smoothly**.
+   - Search widget → **Take place of category widget** with smooth animation.
+   - Hero section → **Fade out**.
+   - List view section → **Fade/slide in** below search widget.
+   - Ensure **layout stability**, no flickers or jumps.
+
+---
+
+## Constraints
+
+- **Do not change folder structure**.
+- **Do not hide the logo or “More” options**.
+- **Search widget icon remains constant**.
+- Focus on:
+  - Component visibility toggling.
+  - Smooth animations.
+  - Browser path update without routing.
+- List view sections must exist **inside home folder** and only appear after search.
+
+---
+
+## Implementation Notes
+
+- Use **state management** or reactive variables to toggle visibility of Hero and List View sections.
+- Use **CSS transitions** or **animation libraries** for smooth fade-in/fade-out.
+- Update the browser path with **`history.pushState`** or framework-specific equivalent without triggering navigation.
+- Ensure **all categories** (Hotel, Flights, Packages) follow the same pattern.
+- Maintain **visual continuity** for header, logo, search widget, and “More” options.
+
+---
+
+## Summary
+
+- Hero section → Hidden on search.
+- Corresponding list view → Visible on search.
+- Header remains → Logo, search widget, and “More” options stay constant.
+- Browser path updates → Reflect category search, no page reload.
+- Smooth animations → Fade/slide transitions for category, hero, and list view sections.c

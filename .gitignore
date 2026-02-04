@@ -1,3 +1,4 @@
 node_modules
 .next
 .travclan-tokens.json
+.env

@@ -18,9 +18,10 @@ export interface RouteDefinition {
 export const routeDefinitions: RouteDefinition[] = [
   { path: "/", middleware: {} },
   { path: "/home", middleware: {} },
-  // Add more routes and middleware as needed, e.g.:
-  // { path: "/account", middleware: { authRequired: true } },
-  // { path: "/login", middleware: { redirectTo: "/" } },
+  { path: "/hotels", middleware: {} },
+  { path: "/hotels/search", middleware: {} },
+  { path: "/flights/search", middleware: {} },
+  { path: "/packages/search", middleware: {} },
 ];
 
 /** Paths that require auth (for middleware) */

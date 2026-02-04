@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { MapPin, Calendar, Users, Search, Plus, Minus, Loader2 } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { MapPin, Calendar, Users, Search, Plus, Minus, Loader2, X, User, Baby, BedDouble, ChevronDown, ChevronUp } from "lucide-react";
 import { content } from "@/frontend/core/content";
-import { dispatchOfflineActionToast } from "@/frontend/core/components/NetworkStatusBar";
+import { dispatchOfflineActionToast, dispatchValidationToast } from "@/frontend/core/components/NetworkStatusBar";
 import { Button } from "@/frontend/components/ui/button";
 import {
   Popover,
@@ -18,6 +18,14 @@ import { cn } from "@/frontend/core/utils";
 import type { LocationSearchResult } from "@/frontend/features/home/models/LocationSearch";
 import { LocationType } from "@/frontend/features/home/models/LocationSearch";
 import { useLocationSearch } from "@/frontend/features/home/hooks/useLocationSearch";
+import {
+  buildHotelSearchPayload,
+  type HotelSearchOccupancy,
+} from "@/frontend/features/home/models/HotelSearch";
+import { paths } from "@/frontend/core/paths";
+import { storeSearchPayload } from "@/frontend/features/hotels/utils/searchParams";
+import { saveLastSearchedDestination, getLastSearchedDestination } from "@/frontend/features/hotels/utils/lastSearchDestination";
+import { updateSearchPath } from "@/frontend/features/home/hooks/useSearchPath";
 
 /** Badge accent by location type: green | purple | blue. */
 function getLocationTypeBadgeClass(type: string): string {
@@ -58,37 +66,152 @@ const DATE_PICKER_CONFIG = {
 /** Minimum number of calendar days in range for minNights (1 night = 2 days: check-in + check-out). */
 const MIN_DAYS_IN_RANGE = DATE_PICKER_CONFIG.minNights + 1;
 
-type Room = { adults: number; children: number };
+type Room = { adults: number; childAges: number[] };
 
-export function HeroWidget() {
+export interface HeroWidgetInitialValues {
+  where: string;
+  dateRange: DateRange;
+  rooms: Room[];
+  selectedLocation?: LocationSearchResult | null;
+}
+
+interface HeroWidgetProps {
+  /** Prefill from current search (e.g. when in list/results view) */
+  initialValues?: HeroWidgetInitialValues;
+}
+
+function parseLocationFromStorage(
+  stored: ReturnType<typeof getLastSearchedDestination>
+): LocationSearchResult | null {
+  if (!stored?.location) return null;
+  const l = stored.location;
+  return {
+    id: l.id,
+    name: l.fullName.split(",")[0]?.trim() ?? l.fullName,
+    fullName: l.fullName,
+    type: l.type as LocationSearchResult["type"],
+    city: null,
+    state: null,
+    country: l.country,
+    coordinates: { lat: 0, long: 0 },
+    referenceId: l.referenceId,
+    referenceScore: 0,
+    isTermMatch: false,
+    relevanceScore: 0,
+    travclanScore: null,
+  };
+}
+
+export function HeroWidget({ initialValues }: HeroWidgetProps) {
   const [whereOpen, setWhereOpen] = useState(false);
   const [whenOpen, setWhenOpen] = useState(false);
   const [whoOpen, setWhoOpen] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const [where, setWhere] = useState("");
+  const [where, setWhere] = useState(initialValues?.where ?? "");
+  /** Only passed to location search API when user types; prevents API call on mount/prefill/selection */
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const whereInputRef = useRef<HTMLInputElement>(null);
   const whereAnchorRef = useRef<HTMLDivElement>(null);
   const whereOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const whereOptionCountRef = useRef(0);
   const [whereHighlightedIndex, setWhereHighlightedIndex] = useState(-1);
-  const [selectedLocation, setSelectedLocation] = useState<LocationSearchResult | null>(null);
-  const { results: locationResults, loading: locationLoading } = useLocationSearch(where, 300);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(
-    DATE_PICKER_CONFIG.getDefaultRange
+  const [selectedLocation, setSelectedLocation] = useState<LocationSearchResult | null>(
+    initialValues?.selectedLocation ?? null
   );
-  const [rooms, setRooms] = useState<Room[]>([{ adults: 1, children: 0 }]);
+  const { results: locationResults, loading: locationLoading } = useLocationSearch(locationSearchQuery, 300);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    initialValues?.dateRange ?? DATE_PICKER_CONFIG.getDefaultRange()
+  );
+  const [rooms, setRooms] = useState<Room[]>(
+    initialValues?.rooms ?? [{ adults: 1, childAges: [] }]
+  );
+  const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set([0]));
+
+  /** Prefill from localStorage when no initialValues (e.g. fresh home load) */
+  useEffect(() => {
+    if (initialValues) return;
+    const last = getLastSearchedDestination();
+    if (last?.where) {
+      setWhere(last.where);
+      const loc = parseLocationFromStorage(last);
+      if (loc) setSelectedLocation(loc);
+    }
+  }, [initialValues]);
 
   /** Disable past dates when allowPastDates is false. Evaluated per render so "today" stays current. */
   const disabledDates = DATE_PICKER_CONFIG.allowPastDates
     ? undefined
     : { before: startOfDay(new Date()) };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       dispatchOfflineActionToast();
+      return;
+    }
+
+    if (!selectedLocation || !where.trim()) {
+      dispatchValidationToast(content.validation.selectDestination);
+      return;
+    }
+
+    const checkIn = dateRange?.from;
+    const checkOut = dateRange?.to;
+    const locationId =
+      selectedLocation.id != null && selectedLocation.id !== undefined
+        ? String(selectedLocation.id)
+        : null;
+
+    const hotelIds =
+      selectedLocation.type === LocationType.Hotel &&
+      selectedLocation.referenceId &&
+      selectedLocation.referenceId.trim()
+        ? [selectedLocation.referenceId]
+        : undefined;
+
+    if (!checkIn || !checkOut) {
+      return;
+    }
+
+    const occupancies: HotelSearchOccupancy[] = rooms.map((r) => ({
+      numOfAdults: r.adults,
+      childAges: [...r.childAges],
+    }));
+
+    const payload = buildHotelSearchPayload({
+      checkIn,
+      checkOut,
+      locationId,
+      hotelIds,
+      nationality: "IN",
+      occupancies,
+      page: 1,
+    });
+
+    setSearchLoading(true);
+    try {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("staya:hotel-search-start"));
+      }
+      await new Promise((r) => setTimeout(r, 350));
+      storeSearchPayload(payload);
+      const query = new URLSearchParams({
+        checkIn: format(checkIn, "yyyy-MM-dd"),
+        checkOut: format(checkOut, "yyyy-MM-dd"),
+        where: where.trim(),
+      });
+      if (locationId != null) query.set("locationId", String(locationId));
+      if (hotelIds?.length) query.set("hotelIds", hotelIds.join(","));
+      saveLastSearchedDestination(where.trim(), selectedLocation);
+      updateSearchPath(`${paths.hotelsSearch}?${query.toString()}`);
+    } catch (err) {
+      console.error("[HeroWidget] Navigation error:", err);
+    } finally {
+      setSearchLoading(false);
     }
   };
+
 
   const whenLabel =
     dateRange?.from && dateRange?.to
@@ -98,7 +221,7 @@ export function HeroWidget() {
         : content.hero.whenPlaceholder;
 
   const totalGuests = rooms.reduce(
-    (sum, r) => sum + r.adults + r.children,
+    (sum, r) => sum + r.adults + r.childAges.length,
     0
   );
   const roomCount = rooms.length;
@@ -108,26 +231,79 @@ export function HeroWidget() {
       : `${roomCount} ${roomCount === 1 ? "Room" : "Rooms"} | ${totalGuests} ${totalGuests === 1 ? "Guest" : "Guests"}`;
 
   const addRoom = () => {
-    setRooms((prev) => [...prev, { adults: 1, children: 0 }]);
+    setRooms((prev) => [...prev, { adults: 1, childAges: [] }]);
+    setExpandedRooms((prev) => new Set(Array.from(prev).concat(rooms.length)));
   };
 
-  const updateRoom = (index: number, key: keyof Room, delta: number) => {
-    setRooms((prev) => {
-      const next = prev.map((r, i) => {
-        if (i !== index) return r;
-        if (key === "adults") {
-          return { ...r, adults: Math.max(0, r.adults + delta) };
-        }
-        return { ...r, children: Math.max(0, r.children + delta) };
-      });
+  const toggleRoomExpanded = (index: number) => {
+    setExpandedRooms((prev) => {
+      const next = new Set(Array.from(prev));
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
       return next;
     });
+  };
+
+  const removeRoom = (index: number) => {
+    setRooms((prev) => prev.filter((_, i) => i !== index));
+    setExpandedRooms((prev) =>
+      new Set(
+        Array.from(prev)
+          .filter((i) => i !== index)
+          .map((i) => (i > index ? i - 1 : i))
+      )
+    );
+  };
+
+  const updateRoomAdults = (index: number, delta: number) => {
+    setRooms((prev) =>
+      prev.map((r, i) =>
+        i !== index ? r : { ...r, adults: Math.max(0, r.adults + delta) }
+      )
+    );
+  };
+
+  const addChild = (roomIndex: number) => {
+    setRooms((prev) =>
+      prev.map((r, i) =>
+        i !== roomIndex
+          ? r
+          : { ...r, childAges: [...r.childAges, 4] }
+      )
+    );
+  };
+
+  const removeChild = (roomIndex: number, childIndex: number) => {
+    setRooms((prev) =>
+      prev.map((r, i) =>
+        i !== roomIndex
+          ? r
+          : { ...r, childAges: r.childAges.filter((_, j) => j !== childIndex) }
+      )
+    );
+  };
+
+  const updateChildAge = (
+    roomIndex: number,
+    childIndex: number,
+    delta: number
+  ) => {
+    setRooms((prev) =>
+      prev.map((r, i) => {
+        if (i !== roomIndex) return r;
+        const nextAges = [...r.childAges];
+        const current = nextAges[childIndex] ?? 0;
+        nextAges[childIndex] = Math.max(1, Math.min(17, current + delta));
+        return { ...r, childAges: nextAges };
+      })
+    );
   };
 
   /** On Where popover close: if they had picked a result, keep it; if dropdown was empty, clear the field (no default text). */
   const handleWhereOpenChange = (open: boolean) => {
     if (!open) {
       setWhereHighlightedIndex(-1);
+      setLocationSearchQuery("");
       const firstResult = locationResults[0];
       if (firstResult) {
         setSelectedLocation(firstResult);
@@ -170,6 +346,7 @@ export function HeroWidget() {
       const item = locationResults[whereHighlightedIndex];
       setSelectedLocation(item);
       setWhere(item.fullName);
+      setLocationSearchQuery("");
       setWhereOpen(false);
       whereInputRef.current?.focus();
     }
@@ -192,6 +369,7 @@ export function HeroWidget() {
       if (item) {
         setSelectedLocation(item);
         setWhere(item.fullName);
+        setLocationSearchQuery("");
         setWhereOpen(false);
         whereInputRef.current?.focus();
       }
@@ -224,6 +402,7 @@ export function HeroWidget() {
                 onChange={(e) => {
                   const value = e.target.value;
                   setWhere(value);
+                  setLocationSearchQuery(value);
                   if (value.trim().length > 0) {
                     setWhereOpen(true);
                   } else {
@@ -289,6 +468,7 @@ export function HeroWidget() {
                       onClick={() => {
                         setSelectedLocation(item);
                         setWhere(item.fullName);
+                        setLocationSearchQuery("");
                         setWhereOpen(false);
                       }}
                       onKeyDown={(e) => handleWhereOptionKeyDown(e, index)}
@@ -385,101 +565,167 @@ export function HeroWidget() {
             align="center"
             sideOffset={8}
           >
-            <div className="space-y-4">
-              {rooms.map((room, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex flex-col gap-3",
-                    index > 0 && "pt-3 border-t border-border"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {content.hero.roomLabel} {index + 1}
-                    </span>
-                    {index > 0 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground h-8 text-xs"
-                        onClick={() =>
-                          setRooms((prev) => prev.filter((_, i) => i !== index))
-                        }
-                      >
-                        Remove
-                      </Button>
+            <div className="flex flex-col gap-1 max-h-[320px] overflow-y-auto">
+              {rooms.map((room, index) => {
+                const isExpanded = expandedRooms.has(index);
+                const guestCount = room.adults + room.childAges.length;
+                return (
+                  <div
+                    key={index}
+                    className="rounded-lg border border-border overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleRoomExpanded(index)}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <BedDouble className="h-4 w-4 text-muted-foreground" />
+                        {content.hero.roomLabel} {index + 1}
+                        <span className="text-muted-foreground font-normal">
+                          ({guestCount} {guestCount === 1 ? "guest" : "guests"})
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {index > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeRoom(index);
+                            }}
+                            aria-label="Remove room"
+                          >
+                            <X className="h-3.5 w-3.5" strokeWidth={2} />
+                          </Button>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </span>
+                    </button>
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border bg-muted/20">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4" />
+                            {content.hero.adultsLabel}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => updateRoomAdults(index, -1)}
+                              disabled={room.adults <= 0}
+                              aria-label={`Decrease ${content.hero.adultsLabel}`}
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </Button>
+                            <span className="w-6 text-center text-sm tabular-nums">
+                              {room.adults}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => updateRoomAdults(index, 1)}
+                              aria-label={`Increase ${content.hero.adultsLabel}`}
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Baby className="h-4 w-4" />
+                              {content.hero.childrenLabel}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => addChild(index)}
+                              aria-label={`Add ${content.hero.child}`}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Add
+                            </Button>
+                          </div>
+                          {room.childAges.length > 0 && (
+                            <div className="space-y-2">
+                              {room.childAges.map((age, childIdx) => (
+                                <div
+                                  key={childIdx}
+                                  className="flex items-center justify-between gap-2"
+                                >
+                                  <span className="text-xs text-muted-foreground">
+                                    {content.hero.child} {childIdx + 1} (age)
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7 rounded-full"
+                                      onClick={() =>
+                                        updateChildAge(index, childIdx, -1)
+                                      }
+                                      disabled={age <= 1}
+                                      aria-label={`Decrease age for child ${childIdx + 1}`}
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <span className="w-5 text-center text-sm tabular-nums">
+                                      {age}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7 rounded-full"
+                                      onClick={() =>
+                                        updateChildAge(index, childIdx, 1)
+                                      }
+                                      disabled={age >= 17}
+                                      aria-label={`Increase age for child ${childIdx + 1}`}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                      onClick={() => removeChild(index, childIdx)}
+                                      aria-label={`Remove child ${childIdx + 1}`}
+                                    >
+                                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm text-muted-foreground">
-                      {content.hero.adultsLabel}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => updateRoom(index, "adults", -1)}
-                        disabled={room.adults <= 0}
-                        aria-label={`Decrease ${content.hero.adultsLabel}`}
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </Button>
-                      <span className="w-6 text-center text-sm tabular-nums">
-                        {room.adults}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => updateRoom(index, "adults", 1)}
-                        aria-label={`Increase ${content.hero.adultsLabel}`}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm text-muted-foreground">
-                      {content.hero.childrenLabel}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => updateRoom(index, "children", -1)}
-                        disabled={room.children <= 0}
-                        aria-label={`Decrease ${content.hero.childrenLabel}`}
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </Button>
-                      <span className="w-6 text-center text-sm tabular-nums">
-                        {room.children}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => updateRoom(index, "children", 1)}
-                        aria-label={`Increase ${content.hero.childrenLabel}`}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <Button
                 type="button"
                 variant="ghost"
-                className="w-full justify-center border border-dashed border-border"
+                className="w-full justify-center border border-dashed border-border shrink-0"
                 onClick={addRoom}
               >
                 {content.hero.addRoom}
@@ -497,8 +743,13 @@ export function HeroWidget() {
             size="icon"
             className="h-12 w-12 rounded-full shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
             aria-label={content.hero.searchButton}
+            disabled={searchLoading}
           >
-            <Search className="h-5 w-5" strokeWidth={iconStroke} />
+            {searchLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" strokeWidth={iconStroke} aria-hidden />
+            ) : (
+              <Search className="h-5 w-5" strokeWidth={iconStroke} />
+            )}
           </Button>
         </div>
       </form>

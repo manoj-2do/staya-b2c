@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { content } from "../content";
 
 const OFFLINE_ACTION_EVENT = "staya:offline-action";
+const VALIDATION_TOAST_EVENT = "staya:validation-toast";
 
 export function dispatchOfflineActionToast() {
   if (typeof window !== "undefined") {
@@ -11,10 +12,19 @@ export function dispatchOfflineActionToast() {
   }
 }
 
+export function dispatchValidationToast(message: string) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(VALIDATION_TOAST_EVENT, { detail: { message } })
+    );
+  }
+}
+
 export function NetworkStatusBar() {
   const [isOnline, setIsOnline] = useState(true);
   const [showBackOnline, setShowBackOnline] = useState(false);
   const [showOfflineToast, setShowOfflineToast] = useState(false);
+  const [validationToast, setValidationToast] = useState<string | null>(null);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -32,14 +42,24 @@ export function NetworkStatusBar() {
       setTimeout(() => setShowOfflineToast(false), 3000);
     };
 
+    const handleValidationToast = (e: Event) => {
+      const msg = (e as CustomEvent<{ message: string }>).detail?.message;
+      if (msg) {
+        setValidationToast(msg);
+        setTimeout(() => setValidationToast(null), 3000);
+      }
+    };
+
     setIsOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     window.addEventListener(OFFLINE_ACTION_EVENT, handleOfflineAction);
+    window.addEventListener(VALIDATION_TOAST_EVENT, handleValidationToast);
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener(OFFLINE_ACTION_EVENT, handleOfflineAction);
+      window.removeEventListener(VALIDATION_TOAST_EVENT, handleValidationToast);
     };
   }, []);
 
@@ -71,6 +91,16 @@ export function NetworkStatusBar() {
           role="alert"
         >
           {content.network.internetRequiredMessage}
+        </div>
+      )}
+
+      {validationToast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg"
+          role="alert"
+          aria-live="polite"
+        >
+          {validationToast}
         </div>
       )}
     </>
