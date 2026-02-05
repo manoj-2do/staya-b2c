@@ -12,9 +12,9 @@ export const content = {
   /** App / site branding */
   app: {
     name: "STAYA",
-    tagline: "Hotels, Flights & Holiday Packages",
+    tagline: "Snap - Hotels, Flights and Package Booking made effortless",
     description:
-      "Explore and book hotels, flights, and holiday packages. Clean, calm travel booking.",
+      "Snap - Hotels, Flights and Package Booking made effortless. Explore and book hotels, flights, and holiday packages.",
   },
 
   /** Top utility strip */
@@ -50,7 +50,7 @@ export const content = {
     holidayTabComingSoonAria: "Holidays — coming soon",
     /** First-view labels */
     whereLabel: "Where",
-    wherePlaceholder: "Search destinations",
+    wherePlaceholder: "Search Hotels",
     whenLabel: "When",
     whenPlaceholder: "Add dates",
     whoLabel: "Who",

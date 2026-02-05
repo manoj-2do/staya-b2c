@@ -8,20 +8,17 @@ import type { HotelSearchResponse } from "@/frontend/features/hotels/models/Hote
 const MOCK_HOTELS = [
   {
     id: "39621191",
-    name: "Beach View Resort",
-    imageUrl:
+    hotelName: "Beach View Resort",
+    heroImage:
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
     starRating: 4.79,
-    freeBreakfast: true,
-    isRefundable: true,
     city: "Kollam",
     area: "Kollam beach",
     visited: true,
     prioritizationScore: null,
     availability: {
       rate: {
-        providerId: null,
-        providerName: null,
+        providerHotelId: "115399",
         offer: {
           title: "3",
           description: "ExclusiveDeal",
@@ -40,24 +37,38 @@ const MOCK_HOTELS = [
         totalDefaultMarkup: 0,
         pRpNFinalRate: 856,
       },
+      options: {
+        freeBreakfast: true,
+        freeCancellation: true,
+        refundable: true,
+        payAtHotel: false,
+        contractedRateExists: false,
+        roomOnly: false,
+        halfBoard: false,
+        fullBoard: false,
+        isGstMandatory: false,
+        isPANMandatory: false,
+        allInclusive: false,
+        isPrivateDistribution: false,
+        isPublicDistribution: true,
+        isOptimizedDistribution: false,
+        isCorporateDistribution: false,
+      }
     },
   },
   {
     id: "39621192",
-    name: "Oceanfront Paradise",
-    imageUrl:
+    hotelName: "Oceanfront Paradise",
+    heroImage:
       "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=300&fit=crop",
     starRating: 4.85,
-    freeBreakfast: true,
-    isRefundable: true,
     city: "Vypin",
     area: "Vypin beach",
     visited: false,
     prioritizationScore: null,
     availability: {
       rate: {
-        providerId: null,
-        providerName: null,
+        providerHotelId: "115400",
         offer: {
           title: "2",
           description: "Best Value",
@@ -76,24 +87,38 @@ const MOCK_HOTELS = [
         totalDefaultMarkup: 0,
         pRpNFinalRate: 856,
       },
+      options: {
+        freeBreakfast: true,
+        freeCancellation: true,
+        refundable: true,
+        payAtHotel: false,
+        contractedRateExists: false,
+        roomOnly: false,
+        halfBoard: false,
+        fullBoard: false,
+        isGstMandatory: false,
+        isPANMandatory: false,
+        allInclusive: false,
+        isPrivateDistribution: false,
+        isPublicDistribution: true,
+        isOptimizedDistribution: false,
+        isCorporateDistribution: false,
+      }
     },
   },
   {
     id: "39621193",
-    name: "Sunset Haven",
-    imageUrl:
+    hotelName: "Sunset Haven",
+    heroImage:
       "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=300&fit=crop",
     starRating: 4.72,
-    freeBreakfast: false,
-    isRefundable: true,
     city: "Kollam",
     area: "Kollam beach",
     visited: true,
     prioritizationScore: null,
     availability: {
       rate: {
-        providerId: null,
-        providerName: null,
+        providerHotelId: "115401",
         offer: {
           title: "1",
           description: "Standard",
@@ -112,24 +137,38 @@ const MOCK_HOTELS = [
         totalDefaultMarkup: 0,
         pRpNFinalRate: 856,
       },
+      options: {
+        freeBreakfast: false,
+        freeCancellation: true,
+        refundable: true,
+        payAtHotel: true,
+        contractedRateExists: false,
+        roomOnly: false,
+        halfBoard: false,
+        fullBoard: false,
+        isGstMandatory: false,
+        isPANMandatory: false,
+        allInclusive: false,
+        isPrivateDistribution: false,
+        isPublicDistribution: true,
+        isOptimizedDistribution: false,
+        isCorporateDistribution: false,
+      }
     },
   },
   {
     id: "39621194",
-    name: "Palm Grove Villa",
-    imageUrl:
+    hotelName: "Palm Grove Villa",
+    heroImage:
       "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=300&fit=crop",
     starRating: 4.65,
-    freeBreakfast: true,
-    isRefundable: false,
     city: "Kozhikode",
     area: "Kozhikode beach",
     visited: false,
     prioritizationScore: null,
     availability: {
       rate: {
-        providerId: null,
-        providerName: null,
+        providerHotelId: "115402",
         offer: {
           title: "2",
           description: "Deal",
@@ -148,24 +187,38 @@ const MOCK_HOTELS = [
         totalDefaultMarkup: 0,
         pRpNFinalRate: 856,
       },
+      options: {
+        freeBreakfast: true,
+        freeCancellation: false,
+        refundable: false,
+        payAtHotel: false,
+        contractedRateExists: false,
+        roomOnly: false,
+        halfBoard: false,
+        fullBoard: false,
+        isGstMandatory: false,
+        isPANMandatory: false,
+        allInclusive: false,
+        isPrivateDistribution: false,
+        isPublicDistribution: true,
+        isOptimizedDistribution: false,
+        isCorporateDistribution: false,
+      }
     },
   },
   {
     id: "39621196",
-    name: "Tropical Bliss",
-    imageUrl:
+    hotelName: "Tropical Bliss",
+    heroImage:
       "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&h=300&fit=crop",
     starRating: 4.58,
-    freeBreakfast: true,
-    isRefundable: true,
     city: "Kovalam",
     area: "Lighthouse beach",
     visited: false,
     prioritizationScore: null,
     availability: {
       rate: {
-        providerId: null,
-        providerName: null,
+        providerHotelId: "115403",
         offer: {
           title: "1",
           description: "Standard",
@@ -184,24 +237,38 @@ const MOCK_HOTELS = [
         totalDefaultMarkup: 0,
         pRpNFinalRate: 963,
       },
+      options: {
+        freeBreakfast: true,
+        freeCancellation: true,
+        refundable: true,
+        payAtHotel: false,
+        contractedRateExists: false,
+        roomOnly: false,
+        halfBoard: false,
+        fullBoard: false,
+        isGstMandatory: false,
+        isPANMandatory: false,
+        allInclusive: false,
+        isPrivateDistribution: false,
+        isPublicDistribution: true,
+        isOptimizedDistribution: false,
+        isCorporateDistribution: false,
+      }
     },
   },
   {
     id: "39621197",
-    name: "Seaside Retreat",
-    imageUrl:
+    hotelName: "Seaside Retreat",
+    heroImage:
       "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&h=300&fit=crop",
     starRating: 4.91,
-    freeBreakfast: true,
-    isRefundable: true,
     city: "Goa",
     area: "Calangute",
     visited: false,
     prioritizationScore: null,
     availability: {
       rate: {
-        providerId: null,
-        providerName: null,
+        providerHotelId: "115404",
         offer: {
           title: "3",
           description: "ExclusiveDeal",
@@ -220,126 +287,24 @@ const MOCK_HOTELS = [
         totalDefaultMarkup: 0,
         pRpNFinalRate: 1082,
       },
+      options: {
+        freeBreakfast: true,
+        freeCancellation: true,
+        refundable: true,
+        payAtHotel: false,
+        contractedRateExists: false,
+        roomOnly: false,
+        halfBoard: false,
+        fullBoard: false,
+        isGstMandatory: false,
+        isPANMandatory: false,
+        allInclusive: false,
+        isPrivateDistribution: false,
+        isPublicDistribution: true,
+        isOptimizedDistribution: false,
+        isCorporateDistribution: false,
+      }
     },
-  },
-  // Duplicated items for pagination testing (ids adjusted)
-  // ... (Adding 8 more items by duplicating the first few with new IDs)
-  {
-    id: "39621191-c2",
-    name: "Beach View Resort II",
-    imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
-    starRating: 4.79,
-    freeBreakfast: true,
-    isRefundable: true,
-    city: "Kollam",
-    area: "Kollam beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 2568, finalRateWithDefaultAgentMarkup: 2568 } as any },
-  },
-  {
-    id: "39621192-c2",
-    name: "Oceanfront Paradise II",
-    imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=300&fit=crop",
-    starRating: 4.85,
-    freeBreakfast: true,
-    isRefundable: true,
-    city: "Vypin",
-    area: "Vypin beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 2368, finalRateWithDefaultAgentMarkup: 2368 } as any },
-  },
-  {
-    id: "39621193-c2",
-    name: "Sunset Haven II",
-    imageUrl: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=300&fit=crop",
-    starRating: 4.72,
-    freeBreakfast: false,
-    isRefundable: true,
-    city: "Kollam",
-    area: "Kollam beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 1950, finalRateWithDefaultAgentMarkup: 1950 } as any },
-  },
-  {
-    id: "39621194-c2",
-    name: "Palm Grove Villa II",
-    imageUrl: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=300&fit=crop",
-    starRating: 4.65,
-    freeBreakfast: true,
-    isRefundable: false,
-    city: "Kozhikode",
-    area: "Kozhikode beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 3100, finalRateWithDefaultAgentMarkup: 3100 } as any },
-  },
-  {
-    id: "39621196-c2",
-    name: "Tropical Bliss II",
-    imageUrl: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&h=300&fit=crop",
-    starRating: 4.58,
-    freeBreakfast: true,
-    isRefundable: true,
-    city: "Kovalam",
-    area: "Lighthouse beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 2890, finalRateWithDefaultAgentMarkup: 2890 } as any },
-  },
-  {
-    id: "39621197-c2",
-    name: "Seaside Retreat II",
-    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&h=300&fit=crop",
-    starRating: 4.91,
-    freeBreakfast: true,
-    isRefundable: true,
-    city: "Goa",
-    area: "Calangute",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 3245, finalRateWithDefaultAgentMarkup: 3245 } as any },
-  },
-  {
-    id: "39621191-c3",
-    name: "Beach View Resort III",
-    imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
-    starRating: 4.79,
-    freeBreakfast: true,
-    isRefundable: true,
-    city: "Kollam",
-    area: "Kollam beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 2568, finalRateWithDefaultAgentMarkup: 2568 } as any },
-  },
-  {
-    id: "39621192-c3",
-    name: "Oceanfront Paradise III",
-    imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=300&fit=crop",
-    starRating: 4.85,
-    freeBreakfast: true,
-    isRefundable: true,
-    city: "Vypin",
-    area: "Vypin beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 2368, finalRateWithDefaultAgentMarkup: 2368 } as any },
-  },
-  {
-    id: "39621193-c3",
-    name: "Sunset Haven III",
-    imageUrl: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=300&fit=crop",
-    starRating: 4.72,
-    freeBreakfast: false,
-    isRefundable: true,
-    city: "Kollam",
-    area: "Kollam beach",
-    visited: false,
-    prioritizationScore: null,
-    availability: { rate: { finalRate: 1950, finalRateWithDefaultAgentMarkup: 1950 } as any },
   },
 ];
 
@@ -348,8 +313,14 @@ export function getMockHotelSearchResponse(
   perPage: number = 5
 ): HotelSearchResponse {
   const start = (page - 1) * perPage;
-  const paginatedHotels = MOCK_HOTELS.slice(start, start + perPage);
-  const totalCount = MOCK_HOTELS.length;
+  // Repeat the mock hotels to simulate more pages
+  const allHotels = [...MOCK_HOTELS, ...MOCK_HOTELS, ...MOCK_HOTELS].map((h, i) => ({
+    ...h,
+    id: `${h.id}-${i}`,
+  }));
+
+  const paginatedHotels = allHotels.slice(start, start + perPage);
+  const totalCount = allHotels.length;
   const totalPages = Math.ceil(totalCount / perPage);
 
   return {

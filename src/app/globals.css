@@ -27,8 +27,8 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    /* Primary: purple (Staya brand) — slightly softer for Airbnb/Framer feel */
-    --primary: 262 83% 58%;
+    /* Primary: Vibrant Blue */
+    --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -40,7 +40,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 262 83% 58%;
+    --ring: 211 100% 50%;
     --radius: 0.75rem;
   }
 

@@ -20,13 +20,15 @@ const PATH_TO_VIEW: Record<string, SearchViewType> = {
  */
 export function useSearchPath(): SearchViewType {
   const pathname = usePathname();
-  const [view, setView] = useState<SearchViewType>("home");
+  const [view, setView] = useState<SearchViewType>(() => {
+    return PATH_TO_VIEW[pathname] ?? "home";
+  });
 
   useEffect(() => {
     setView(
       PATH_TO_VIEW[pathname] ??
-        PATH_TO_VIEW[window.location?.pathname ?? ""] ??
-        "home"
+      PATH_TO_VIEW[window.location?.pathname ?? ""] ??
+      "home"
     );
   }, [pathname]);
 

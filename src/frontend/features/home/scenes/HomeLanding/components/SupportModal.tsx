@@ -81,7 +81,7 @@ export function SupportModal({ open, onClose }: SupportModalProps) {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium leading-none">Email Support</p>
-                                        <p className="text-sm text-muted-foreground mt-1">support@staya.com</p>
+                                        <p className="text-sm text-muted-foreground mt-1"> manoj.tudu@snap.com</p>
                                     </div>
                                 </a>
 
@@ -94,7 +94,7 @@ export function SupportModal({ open, onClose }: SupportModalProps) {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium leading-none">Call Us</p>
-                                        <p className="text-sm text-muted-foreground mt-1">+91 98765 43210</p>
+                                        <p className="text-sm text-muted-foreground mt-1">+91 7978999520</p>
                                     </div>
                                 </a>
                             </div>
@@ -110,8 +110,8 @@ export function SupportModal({ open, onClose }: SupportModalProps) {
                             <div>
                                 <h4 className="text-sm font-medium leading-none mb-1.5">Our Office</h4>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    123 Staya HQ, Startup Hub<br />
-                                    Koramangala, Bangalore - 560034
+                                    001 10101 00001, _._._.___<br />
+                                    ___.__.._, _._._.___ - XXXXXX
                                 </p>
                             </div>
                         </div>

@@ -26,7 +26,7 @@ export function HomeLandingScene() {
   const isHomeView = searchView === "home";
   const isListView = searchView === "hotels" || searchView === "flights" || searchView === "packages";
 
-  const payload = useMemo(() => getSearchPayload(), []);
+  const payload = useMemo(() => getSearchPayload(), [searchParams]);
   const where = searchParams?.get("where") ?? "Destination";
   const checkIn = searchParams?.get("checkIn") ?? "";
   const checkOut = searchParams?.get("checkOut") ?? "";

@@ -10,6 +10,7 @@ import type { HotelSearchPayload } from "@/frontend/features/home/models/HotelSe
 import { apiPaths } from "@/frontend/core/config/apiPaths";
 import { env } from "@/frontend/core/config/env";
 import { getMockHotelSearchResponse } from "@/mock-data/hotelSearchResponse";
+import { setGlobalTraceId } from "@/frontend/core/store/searchStore";
 
 export interface UseHotelSearchState {
   hotels: HotelSearchResultItem[];
@@ -91,6 +92,8 @@ export function useHotelSearch(
       const results = response?.results;
       const items = results?.data ?? [];
       const traceDetails = results?.traceIdDetails ?? null;
+
+      setGlobalTraceId(traceDetails?.id ?? null);
 
       setState({
         hotels: items,

@@ -10,7 +10,14 @@ import { cn } from "@/frontend/core/utils";
 import { HeroWidget, type HeroWidgetInitialValues } from "./HeroWidget";
 import { updateSearchPath } from "@/frontend/features/home/hooks/useSearchPath";
 
-import { SupportModal } from "./SupportModal";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/frontend/components/ui/popover";
+import { SupportMenuContent } from "./SupportMenuContent";
+
+// ... (existing imports and component implementation)
 
 const navIconSize = 35;
 
@@ -25,9 +32,17 @@ function Logo() {
     <button
       type="button"
       onClick={() => updateSearchPath("/")}
-      className="text-xl font-black italic text-foreground tracking-tighter hover:opacity-80 transition-opacity shrink-0 text-left"
+      className="focus:outline-none"
+      aria-label="Go to Home"
     >
-      {content.app.name}
+      <Image
+        src="/logo/logo.png"
+        alt={content.app.name}
+        width={120}
+        height={120}
+        className="h-10 w-auto object-contain"
+        priority
+      />
     </button>
   );
 }
@@ -37,7 +52,6 @@ export function HomeHeader({
   heroInitialValues,
 }: HomeHeaderProps) {
   const [showTabs, setShowTabs] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isResultsView) setShowTabs(false);
@@ -51,16 +65,16 @@ export function HomeHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/20 bg-white/70 backdrop-blur-md shadow-sm transition-all">
+    <header className="sticky top-0 z-40 border-b border-white/20 bg-gray-50/80 backdrop-blur-md shadow-sm transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center gap-4 w-full min-h-[56px]">
+          {/* Logo */}
           <div className="self-start pt-0.5 transform transition-transform hover:scale-105 origin-left">
-            <div className="font-extrabold text-2xl tracking-tighter italic text-violet-700" style={{ transform: "skew(-10deg)" }}>
-              STAYA
-            </div>
+            <Logo />
           </div>
 
           <div className="flex-1 min-w-0 flex justify-center items-center">
+            {/* ... (existing nav logic) ... */}
             <div className={cn("w-full max-w-[50vw] flex flex-col", showTabs ? "gap-4" : "gap-0")}>
               <nav
                 className={cn(
@@ -70,6 +84,7 @@ export function HomeHeader({
                 aria-label={content.nav.travelCategoriesAriaLabel}
                 aria-hidden={!showTabs}
               >
+                {/* ... (existing nav buttons) ... */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -114,19 +129,24 @@ export function HomeHeader({
           </div>
 
           <div className="self-start pt-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full text-muted-foreground bg-slate-100/50 hover:bg-slate-100 hover:text-foreground shrink-0 transition-colors"
-              aria-label={content.nav.moreMenuAria}
-              onClick={() => setMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" strokeWidth={1.5} />
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full text-muted-foreground bg-slate-200 hover:bg-slate-300 hover:text-foreground shrink-0 transition-colors"
+                  aria-label={content.nav.moreMenuAria}
+                >
+                  <Menu className="h-5 w-5" strokeWidth={1.5} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end" sideOffset={8}>
+                <SupportMenuContent />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
-      <SupportModal open={menuOpen} onClose={() => setMenuOpen(false)} />
     </header>
   );
 }

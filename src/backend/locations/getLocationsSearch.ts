@@ -42,11 +42,7 @@ export async function getLocationsSearch(
   >({
     method: "GET",
     url,
-    headers: {
-      accept: "application/json",
-      "Authorization-Type": "external-service",
-      source: env.travclan.source ?? "website",
-    },
+
   });
 
   if (result.status >= 200 && result.status < 300 && result.data) {
@@ -54,8 +50,8 @@ export async function getLocationsSearch(
     const list = Array.isArray(parsed.results)
       ? parsed.results
       : Array.isArray(parsed.data)
-      ? parsed.data
-      : [];
+        ? parsed.data
+        : [];
     return {
       ok: true,
       data: { ...parsed, results: list as LocationSearchResult[] },

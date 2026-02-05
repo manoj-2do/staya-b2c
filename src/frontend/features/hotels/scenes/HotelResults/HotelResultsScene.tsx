@@ -37,6 +37,7 @@ export function HotelResultsScene() {
     hasMore,
     search,
     loadMore,
+    traceId,
   } = useHotelSearch(payload);
 
   const where = searchParams?.get("where") ?? "Destination";
@@ -144,8 +145,6 @@ export function HotelResultsScene() {
                       <HotelCard
                         key={hotel.id}
                         hotel={hotel}
-                        checkIn={checkIn}
-                        checkOut={checkOut}
                       />
                     ))}
                   </div>

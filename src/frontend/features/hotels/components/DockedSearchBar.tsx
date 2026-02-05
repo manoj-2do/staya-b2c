@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Calendar, Users, Search, Menu } from "lucide-react";
 import { content } from "@/frontend/core/content";
 import { updateSearchPath } from "@/frontend/features/home/hooks/useSearchPath";
@@ -53,8 +54,14 @@ export function DockedSearchBar({
 
   return (
     <div className="flex items-center gap-4 w-full">
-      <Link href="/" className="text-xl font-black italic text-foreground tracking-tighter hover:opacity-80 transition-opacity shrink-0">
-        {content.app.name}
+      <Link href="/" className="focus:outline-none shrink-0">
+        <Image
+          src="/logo/logo.png"
+          alt={content.app.name}
+          width={40}
+          height={40}
+          className="h-10 w-auto object-contain"
+        />
       </Link>
       {searchBar}
       <button type="button" className="shrink-0 rounded-full p-2 hover:bg-muted/80 transition-colors" aria-label={content.nav.moreMenuAria}>

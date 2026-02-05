@@ -12,6 +12,7 @@ import {
   PopoverAnchor,
 } from "@/frontend/components/ui/popover";
 import { Calendar as CalendarUi } from "@/frontend/components/ui/calendar";
+import { useRouter } from "next/navigation";
 import type { DateRange } from "react-day-picker";
 import { format, startOfDay, addDays } from "date-fns";
 import { cn } from "@/frontend/core/utils";
@@ -79,6 +80,8 @@ export interface HeroWidgetInitialValues {
 interface HeroWidgetProps {
   /** Prefill from current search (e.g. when in list/results view) */
   initialValues?: HeroWidgetInitialValues;
+  /** Optional callback to intercept search. Return false to cancel search. */
+  onBeforeSearch?: () => Promise<boolean> | boolean;
 }
 
 function parseLocationFromStorage(
@@ -103,7 +106,9 @@ function parseLocationFromStorage(
   };
 }
 
-export function HeroWidget({ initialValues }: HeroWidgetProps) {
+export function HeroWidget(props: HeroWidgetProps) {
+  const { initialValues } = props;
+  const router = useRouter();
   const [whereOpen, setWhereOpen] = useState(false);
   const [whenOpen, setWhenOpen] = useState(false);
   const [whoOpen, setWhoOpen] = useState(false);
@@ -125,7 +130,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
     initialValues?.dateRange ?? DATE_PICKER_CONFIG.getDefaultRange()
   );
   const [rooms, setRooms] = useState<Room[]>(
-    initialValues?.rooms ?? [{ adults: 1, childAges: [] }]
+    initialValues?.rooms?.map(r => ({ ...r, childAges: r.childAges || [] })) ?? [{ adults: 2, childAges: [] }]
   );
   const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set([0]));
 
@@ -175,6 +180,12 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
       return;
     }
 
+    // Intercept search if prop provided
+    if (initialValues && typeof (props as any).onBeforeSearch === 'function') {
+      const shouldProceed = await (props as any).onBeforeSearch();
+      if (!shouldProceed) return;
+    }
+
     const occupancies: HotelSearchOccupancy[] = rooms.map((r) => ({
       numOfAdults: r.adults,
       childAges: [...r.childAges],
@@ -203,6 +214,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
         checkIn: format(checkIn, "yyyy-MM-dd"),
         checkOut: format(checkOut, "yyyy-MM-dd"),
         where: where.trim(),
+        searchId: String(Date.now()), // Force URL change to trigger re-search even with same params
       });
       if (locationId != null) query.set("locationId", String(locationId));
       if (hotelIds?.length) query.set("hotelIds", hotelIds.join(","));
@@ -212,7 +224,10 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
       // Wait a small tick to allow UI to transition state
       await new Promise((r) => setTimeout(r, 100));
 
-      updateSearchPath(`${paths.hotelsSearch}?${query.toString()}`);
+      const targetPath = `${paths.hotelsSearch}?${query.toString()}`;
+      router.push(targetPath);
+      // Manually trigger local path update for immediate feedback if on same page
+      updateSearchPath(targetPath);
 
       // Force path change event to ensure listeners pick it up immediately
       if (typeof window !== "undefined") {
@@ -221,10 +236,25 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
 
     } catch (err) {
       console.error("[HeroWidget] Navigation error:", err);
-    } finally {
+      // Only disable loading on error here, otherwise wait for complete event
       setSearchLoading(false);
     }
   };
+
+  // Listen for search complete event to stop loading state
+  useEffect(() => {
+    const handleComplete = () => setSearchLoading(false);
+    window.addEventListener("staya:hotel-search-complete", handleComplete);
+    // Safety timeout to prevent infinite loading state
+    let safetyTimer: NodeJS.Timeout;
+    if (searchLoading) {
+      safetyTimer = setTimeout(() => setSearchLoading(false), 15000);
+    }
+    return () => {
+      window.removeEventListener("staya:hotel-search-complete", handleComplete);
+      clearTimeout(safetyTimer);
+    };
+  }, [searchLoading]);
 
 
   const whenLabel =
@@ -235,7 +265,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
         : content.hero.whenPlaceholder;
 
   const totalGuests = rooms.reduce(
-    (sum, r) => sum + r.adults + r.childAges.length,
+    (sum, r) => sum + r.adults + (r.childAges?.length ?? 0),
     0
   );
   const roomCount = rooms.length;
@@ -391,7 +421,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
   };
 
   return (
-    <div className="rounded-[3rem] overflow-hidden border border-border bg-card shadow-sm">
+    <div className="rounded-[3rem] overflow-hidden border border-border bg-card shadow-sm hover:shadow-xl transition-shadow duration-300">
       <form onSubmit={handleSearch} className="flex flex-col lg:flex-row lg:items-stretch">
         {/* Where — user can type and select from list; no focus ring; on dismiss default to first suggestion */}
         <Popover open={whereOpen} onOpenChange={handleWhereOpenChange}>
@@ -416,7 +446,13 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
                 onChange={(e) => {
                   const value = e.target.value;
                   setWhere(value);
-                  setLocationSearchQuery(value);
+                  // Only trigger API search if 3 or more chars
+                  if (value.trim().length >= 3) {
+                    setLocationSearchQuery(value);
+                  } else {
+                    setLocationSearchQuery("");
+                  }
+
                   if (value.trim().length > 0) {
                     setWhereOpen(true);
                   } else {
@@ -430,6 +466,13 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
                   const el = e.target as HTMLInputElement;
                   const len = el.value.length;
                   el.setSelectionRange(len, len);
+                  el.scrollLeft = el.scrollWidth;
+                }}
+                onClick={(e) => {
+                  const el = e.currentTarget;
+                  const len = el.value.length;
+                  el.setSelectionRange(len, len);
+                  el.scrollLeft = el.scrollWidth;
                 }}
                 onKeyDown={handleWhereKeyDown}
                 className={cn(
@@ -457,7 +500,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
               className="max-h-[280px] overflow-auto py-2 divide-y divide-border"
               aria-label={content.hero.whereLabel}
             >
-              {locationLoading ? (
+              {(locationLoading || (where.trim().length > 0 && where.trim().length < 3)) ? (
                 <li className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground" role="status" aria-busy="true">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   Searching…
@@ -546,10 +589,10 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
               mode="range"
               selected={dateRange}
               onSelect={(range, selectedDay) => {
-                // If a full range is already selected (from & to), and user clicks a new date, 
-                // we want to START OVER with that new date as 'from', clearing 'to'.
-                // The default behavior often modifies the existing range extremities.
-                if (dateRange?.from && dateRange?.to && selectedDay) {
+                // Better range handling: if we have a From and valid To, resets.
+                // If we select a day before From, it resets start.
+                // Standard behavior + smart reset.
+                if (dateRange?.from && dateRange?.to) {
                   setDateRange({ from: selectedDay, to: undefined });
                 } else {
                   setDateRange(range);
@@ -558,7 +601,7 @@ export function HeroWidget({ initialValues }: HeroWidgetProps) {
               numberOfMonths={2}
               defaultMonth={dateRange?.from ?? new Date()}
               disabled={disabledDates}
-              min={MIN_DAYS_IN_RANGE}
+            // min={2} // Removing strict min enforcement here to allow user to pick dates freely, validation happens on Search
             />
           </PopoverContent>
         </Popover>

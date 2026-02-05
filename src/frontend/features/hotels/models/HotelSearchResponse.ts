@@ -10,10 +10,35 @@ export interface HotelSearchRateOffer {
   percentageDiscountOffer: string;
 }
 
+export interface HotelSearchRateOptions {
+  freeBreakfast: boolean;
+  freeCancellation: boolean;
+  refundable: boolean;
+  payAtHotel: boolean;
+  contractedRateExists: boolean;
+  roomOnly: boolean;
+  halfBoard: boolean;
+  fullBoard: boolean;
+  isGstMandatory: boolean;
+  isPANMandatory: boolean;
+  allInclusive: boolean;
+  isPrivateDistribution: boolean;
+  isPublicDistribution: boolean;
+  isOptimizedDistribution: boolean;
+  isCorporateDistribution: boolean;
+}
+
+export interface HotelSearchBoardBasis {
+  description: string;
+  type: string;
+}
+
 export interface HotelSearchRate {
-  providerId: string | null;
-  providerName: string | null;
-  offer: HotelSearchRateOffer;
+  providerHotelId: string | null;
+  boardBasis?: HotelSearchBoardBasis;
+  refundability?: string;
+  providerName?: string | null;
+  offer?: HotelSearchRateOffer;
   distributionChannel: string;
   payAtHotel: boolean;
   additionalCharges: unknown[];
@@ -29,21 +54,19 @@ export interface HotelSearchRate {
 
 export interface HotelSearchAvailability {
   rate: HotelSearchRate;
+  options?: HotelSearchRateOptions;
 }
 
 export interface HotelSearchResultItem {
   id: string;
+  hotelName: string;
+  heroImage: string | null;
   availability?: HotelSearchAvailability;
   visited?: boolean;
   prioritizationScore?: number | null;
-  /** Extended fields from API (when available) */
-  name?: string;
-  imageUrl?: string;
-  starRating?: number;
-  freeBreakfast?: boolean;
-  isRefundable?: boolean;
   city?: string;
   area?: string;
+  starRating?: number;
 }
 
 export interface TraceIdDetails {

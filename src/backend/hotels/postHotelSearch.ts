@@ -28,12 +28,7 @@ export async function postHotelSearch(
   const result = await request<unknown>({
     method: "POST",
     url,
-    headers: {
-      "Content-Type": "application/json",
-      accept: "application/json",
-      "Authorization-Type": "external-service",
-      source: env.travclan.source ?? "website",
-    },
+    headers: {},
     body: JSON.stringify(payload),
   });
 

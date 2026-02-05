@@ -14,7 +14,10 @@ Enhance the **Home Landing** page so that when a search is performed for any cat
  9. For now increase the objects in mock data for list view to 15.
  10. Home hero section should have some sample contents for travel website lets keep it static for now. I donot know exactly what to keep but just a simple view modern design.
  11. The list view should be smoothly scrollable and there is no y-gap even tho I have mentioned it is not working I guess due to virtualization. please fix that as well I want virtualization tho.
- 12. the header background should be glass morphism blur texture..
- 13. If possible STAYA should be like NIKE Logo
+ 12. The hotel card refundable icon should be "R" in green color and remove carousl dots and heart icon from the card.
+ 13. the header background should be glass morphism blur texture..
+ 14. If possible STAYA should be like NIKE font
+ 15. The search result view, the widget has some top padding we can reduce that so that the logo and the more option and widget are properly aligned to the top in that view. doesn't mean remove the entire top padding
+ 
 
 

@@ -6,6 +6,7 @@
 
 import { getCachedTokens, refreshAppToken } from "@/backend/auth/travclanAuth";
 import type { TravClanAuthResponse } from "@/backend/auth/travclanAuth";
+import { env } from "@/frontend/core/config/env";
 
 const SEP = "────────────────────────────────────────────────────────";
 
@@ -72,10 +73,9 @@ function logRequest(
     `curl -X ${method.toUpperCase()} '${url}'`,
     ...Object.entries(headers).map(
       ([k, v]) =>
-        `  -H '${k}: ${
-          k === "Authorization" && String(v).startsWith("Bearer ")
-            ? "Bearer ***"
-            : v
+        `  -H '${k}: ${k === "Authorization" && String(v).startsWith("Bearer ")
+          ? "Bearer ***"
+          : v
         }'`
     ),
   ];
@@ -109,7 +109,15 @@ export async function request<T = unknown>(
   const { method, url, headers: configHeaders = {}, body } = config;
 
   let accessToken = getAccessToken();
+  const defaultHeaders = {
+    "Content-Type": "application/json",
+    accept: "application/json",
+    "Authorization-Type": "external-service",
+    source: env.travclan.source ?? "website",
+  };
+
   const headers: Record<string, string> = {
+    ...defaultHeaders,
     ...configHeaders,
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
   };
