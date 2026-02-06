@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { DM_Sans, Koulen } from "next/font/google";
 import React, { type ReactNode } from "react";
-import { appConfig } from "@/frontend/core/app.config";
-import { content } from "@/frontend/core/content";
-import { NetworkStatusBar } from "@/frontend/core/components/NetworkStatusBar";
+import { appConfig } from "@/lib/app.config";
+import { content } from "@/lib/content";
+import { NetworkStatusBar } from "@/components/common/NetworkStatusBar";
 import "./globals.css";
 
 const dmSans = DM_Sans({

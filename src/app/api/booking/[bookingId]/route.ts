@@ -5,8 +5,8 @@
  */
 
 import { NextResponse } from "next/server";
-import { getBookingDetails } from "@/backend/hotels/getBookingDetails";
-import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
+import { getBookingDetails } from "@/lib/api/hotels/getBookingDetails";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/lib/utils/apiResponse";
 
 export async function GET(
     request: Request,

@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { appApiPaths } from "@/backend/apiPaths";
-import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
-import { BookingDetails } from "@/frontend/features/hotels/models/BookingDetails";
-import { BookingSuccess } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingSuccess";
+import { appApiPaths } from "@/lib/api/apiPaths";
+import { fetchWithAuth } from "@/lib/auth/fetchWithAuth";
+import { BookingDetails } from "@/features/hotels/models/BookingDetails";
+import { BookingSuccess } from "@/features/hotels/scenes/HotelBooking/components/BookingSuccess";
 import { Loader2, AlertCircle } from "lucide-react";
-import { Button } from "@/frontend/components/ui/button";
-import { CompactHeader } from "@/frontend/features/hotels/scenes/HotelDetails/components/CompactHeader";
+import { Button } from "@/components/ui/button";
+import { CompactHeader } from "@/features/hotels/scenes/HotelDetails/components/CompactHeader";
 
 function BookingStatusContent() {
     const searchParams = useSearchParams();

@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { getAppToken } from "@/backend/auth/travclanAuth";
+import { getAppToken } from "@/lib/auth/travclanAuth";
 
 export async function GET() {
   const result = await getAppToken();

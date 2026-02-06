@@ -3,7 +3,7 @@
  * Enable via NEXT_PUBLIC_USE_MOCK_HOTEL_SEARCH=true
  */
 
-import type { HotelSearchResponse } from "@/frontend/features/hotels/models/HotelSearchResponse";
+import type { HotelSearchResponse } from "@/features/hotels/models/HotelSearchResponse";
 
 const MOCK_HOTELS = [
   {

@@ -1,5 +1,5 @@
-import { App } from "@/frontend/core/App";
-import { getDefinedPaths } from "@/frontend/core/routes";
+import { App } from "@/lib/App";
+import { getDefinedPaths } from "@/lib/routes";
 import { notFound } from "next/navigation";
 
 interface PageProps {

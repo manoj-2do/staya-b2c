@@ -5,9 +5,9 @@
  */
 
 import { NextResponse } from "next/server";
-import { postHotelSearch } from "@/backend/hotels/postHotelSearch";
-import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
-import type { HotelSearchPayload } from "@/frontend/features/home/models/HotelSearch";
+import { postHotelSearch } from "@/lib/api/hotels/postHotelSearch";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/lib/utils/apiResponse";
+import type { HotelSearchPayload } from "@/features/home/models/HotelSearch";
 
 export async function POST(request: Request) {
   try {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { appConfig } from "@/frontend/core/app.config";
-import { getProtectedPaths } from "@/frontend/core/route-definitions";
+import { appConfig } from "@/lib/app.config";
+import { getProtectedPaths } from "@/lib/route-definitions";
 
 /**
  * Runs on every request. Uses app config (initial route) and route definitions (middleware options).

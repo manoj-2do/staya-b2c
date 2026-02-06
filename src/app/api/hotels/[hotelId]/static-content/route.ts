@@ -4,8 +4,8 @@
  */
 
 import { NextResponse } from "next/server";
-import { getHotelStaticContent } from "@/backend/hotels/getHotelStaticContent";
-import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
+import { getHotelStaticContent } from "@/lib/api/hotels/getHotelStaticContent";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/lib/utils/apiResponse";
 
 interface RouteParams {
     params: {

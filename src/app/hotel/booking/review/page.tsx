@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CompactHeader } from "@/frontend/features/hotels/scenes/HotelDetails/components/CompactHeader";
-import { BookingSteps } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingSteps";
-import { TravellerDetailsForm, RoomGuests, ContactInfo } from "@/frontend/features/hotels/scenes/HotelBooking/components/TravellerDetailsForm";
-import { ReviewBookingSummary } from "@/frontend/features/hotels/scenes/HotelBooking/components/ReviewBookingSummary";
-import { usePriceCheck } from "@/frontend/features/hotels/scenes/HotelDetails/hooks/usePriceCheck";
-import { getSelectedRate, getSelectedHotel } from "@/frontend/core/store/searchStore";
-import { paths } from "@/frontend/core/paths";
+import { CompactHeader } from "@/features/hotels/scenes/HotelDetails/components/CompactHeader";
+import { BookingSteps } from "@/features/hotels/scenes/HotelBooking/components/BookingSteps";
+import { TravellerDetailsForm, RoomGuests, ContactInfo } from "@/features/hotels/scenes/HotelBooking/components/TravellerDetailsForm";
+import { ReviewBookingSummary } from "@/features/hotels/scenes/HotelBooking/components/ReviewBookingSummary";
+import { usePriceCheck } from "@/features/hotels/scenes/HotelDetails/hooks/usePriceCheck";
+import { getSelectedRate, getSelectedHotel } from "@/lib/store/searchStore";
+import { paths } from "@/lib/paths";
 import { Loader2, CheckCircle, ChevronLeft, Calendar, Moon } from "lucide-react";
-import { Button } from "@/frontend/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,13 +20,13 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/frontend/components/ui/alert-dialog";
-import { appApiPaths } from "@/backend/apiPaths";
-import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
-import { BookingLoader } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingLoader";
-import type { BookHotelPayload, BookHotelGuest, BookHotelResponse } from "@/frontend/features/hotels/models/BookHotel";
-import { GenericErrorModal } from "@/frontend/components/common/GenericErrorModal";
-import { getSearchPayload } from "@/frontend/features/hotels/utils/searchParams";
+} from "@/components/ui/alert-dialog";
+import { appApiPaths } from "@/lib/api/apiPaths";
+import { fetchWithAuth } from "@/lib/auth/fetchWithAuth";
+import { BookingLoader } from "@/features/hotels/scenes/HotelBooking/components/BookingLoader";
+import type { BookHotelPayload, BookHotelGuest, BookHotelResponse } from "@/features/hotels/models/BookHotel";
+import { GenericErrorModal } from "@/components/common/GenericErrorModal";
+import { getSearchPayload } from "@/features/hotels/utils/searchParams";
 
 function ReviewBookingContent() {
     const router = useRouter();

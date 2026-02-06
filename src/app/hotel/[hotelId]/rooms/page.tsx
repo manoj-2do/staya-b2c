@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { HotelDetailsScene } from "@/frontend/features/hotels/scenes/HotelDetails/HotelDetailsScene";
+import { HotelDetailsScene } from "@/features/hotels/scenes/HotelDetails/HotelDetailsScene";
 
 interface HotelDetailPageProps {
     params: {
