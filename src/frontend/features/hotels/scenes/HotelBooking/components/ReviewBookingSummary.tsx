@@ -32,6 +32,11 @@ export function ReviewBookingSummary({
             <div className="space-y-6">
                 {/* Header: Price */}
                 <div>
+                    {simpleMode && (
+                        <div className="flex items-center gap-1 mt-1 text-green-700 text-sm font-medium">
+                            <span>Price Summary</span>
+                        </div>
+                    )}
                     {!simpleMode && (
                         <p className="text-sm text-gray-500 font-medium mb-1">{hotelName || "Selected Hotel"}</p>
                     )}
@@ -82,7 +87,11 @@ export function ReviewBookingSummary({
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-600">
                                 <Check className="w-3 h-3 text-gray-400" />
-                                <span>{selectedRoom.boardBasis}</span>
+                                <span>
+                                    {typeof selectedRoom.boardBasis === 'string'
+                                        ? selectedRoom.boardBasis
+                                        : (selectedRoom.boardBasis as any)?.description || "Room Only"}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -119,13 +128,6 @@ export function ReviewBookingSummary({
                         actionLabel
                     )}
                 </Button>
-
-                {/* Airbnb style footer text */}
-                {actionLabel === "Continue to Review" && (
-                    <p className="text-xs text-center text-gray-500 mt-2">
-                        You won&apos;t be charged yet
-                    </p>
-                )}
             </div>
         </div>
     );

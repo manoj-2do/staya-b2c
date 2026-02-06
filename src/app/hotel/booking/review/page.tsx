@@ -21,8 +21,11 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/frontend/components/ui/alert-dialog";
-import { getSearchPayload } from "@/frontend/features/hotels/utils/searchParams";
+import { appApiPaths } from "@/backend/apiPaths";
+import { BookingLoader } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingLoader";
+import type { BookHotelPayload, BookHotelGuest, BookHotelResponse } from "@/frontend/features/hotels/models/BookHotel";
 import { GenericErrorModal } from "@/frontend/components/common/GenericErrorModal";
+import { getSearchPayload } from "@/frontend/features/hotels/utils/searchParams";
 
 export default function ReviewBookingPage() {
     const router = useRouter();
@@ -45,9 +48,7 @@ export default function ReviewBookingPage() {
     // Validation Errors
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Step 2 Logic (Price Change)
-    const [priceChangeModalOpen, setPriceChangeModalOpen] = useState(false);
-    const [newPrice, setNewPrice] = useState<number | null>(null);
+
 
     // Error Modal State
     const [errorModalOpen, setErrorModalOpen] = useState(false);
@@ -56,11 +57,17 @@ export default function ReviewBookingPage() {
     // Back Alert State
     const [backAlertOpen, setBackAlertOpen] = useState(false);
 
+    // Booking Loader State
+    const [bookingLoading, setBookingLoading] = useState(false);
+
     const occupancies = React.useMemo(() => {
         const payload = getSearchPayload();
         // If we have payload occupancies use them, otherwise default to 1 room 2 adults (fallback)
         return payload?.occupancies || [{ numOfAdults: 2, childAges: [] }];
     }, []);
+
+    // Flag to ensure we don't spam checkPrice
+    const priceCheckRun = React.useRef(false);
 
     useEffect(() => {
         // Hydrate from store
@@ -73,7 +80,7 @@ export default function ReviewBookingPage() {
 
         // Initialize Traveller Data only once
         if (travellerData.length === 0) {
-            const initialData = occupancies.map((occ, rIdx) => ({
+            const initialData = occupancies.map((occ: any, rIdx: number) => ({
                 roomIndex: rIdx,
                 guests: [
                     ...Array(occ.numOfAdults).fill(null).map(() => ({
@@ -82,7 +89,7 @@ export default function ReviewBookingPage() {
                         lastName: "",
                         type: "Adult" as const
                     })),
-                    ...(occ.childAges || []).map((age) => ({
+                    ...(occ.childAges || []).map((age: number) => ({
                         salutation: "Master",
                         firstName: "",
                         lastName: "",
@@ -94,6 +101,42 @@ export default function ReviewBookingPage() {
             setTravellerData(initialData);
         }
     }, [hotelId, traceId, roomId, router, occupancies]);
+
+    // Background Price Check to get correct RoomIDs and latest price
+    useEffect(() => {
+        if (!hotelId || !traceId || !roomId || priceCheckRun.current) return;
+
+        const runPriceCheck = async () => {
+            priceCheckRun.current = true;
+            try {
+                const result = await checkPrice({
+                    hotelId,
+                    traceId,
+                    optionId: roomId
+                });
+
+                if (result.ok && result.data?.options?.[roomId]?.rate) {
+                    const freshRate = result.data.options[roomId].rate;
+                    // Update selectedRate with fresh data (crucially occupancies with roomId)
+                    setSelectedRateState((prev: any) => ({
+                        ...prev,
+                        ...freshRate,
+                        // Ensure nested merge if needed, but top level spread of rate usually covers occupancies
+                    }));
+
+                    // Also check for price change here if needed (optional feature, but good for data consistency)
+                    if (result.data?.priceChangeData?.isPriceChanged) {
+                        // setNewPrice(result.data.priceChangeData.newPrice); // Removed unused state setter
+                        console.log("Price changed to:", result.data.priceChangeData.newPrice);
+                    }
+                }
+            } catch (err) {
+                console.error("Background price check failed", err);
+            }
+        };
+
+        runPriceCheck();
+    }, [hotelId, traceId, roomId, checkPrice]);
 
     // Clear specific error
     const handleClearError = (key: string) => {
@@ -158,41 +201,87 @@ export default function ReviewBookingPage() {
     };
 
     const handleConfirmBooking = async () => {
-        if (!hotelId || !traceId || !roomId) return;
+        if (!hotelId || !traceId || !roomId || !selectedRate) return;
 
-        // Call Price Check Again
-        const result = await checkPrice({
-            hotelId,
-            traceId,
-            optionId: selectedRate.id || roomId
-        });
+        // Skip Price Check -> Direct Booking
+        setBookingLoading(true);
 
-        if (result.ok) {
-            // Check if price changed
-            const latestPrice = result.data?.priceChangeData.newPrice; // Adjust based on actual API response shape
+        try {
+            // Map frontend rooms to API structure
+            // NOTE: The API expects `roomDetails` array.
+            // Map frontend rooms to API structure
+            // NOTE: The API expects `roomDetails` array.
+            const roomsPayload = travellerData.map((room, idx) => {
+                // Get the correct roomId from the selected rate's occupancies
+                // Fallback to the optionId (roomId var) if not found, though it should be there per API spec
+                const correctRoomId = selectedRate?.occupancies?.[idx]?.roomId || roomId;
 
-            if (result.data?.priceChangeData?.isPriceChanged && latestPrice) {
-                setNewPrice(latestPrice);
-                setPriceChangeModalOpen(true);
-                return;
+                return {
+                    roomId: correctRoomId,
+                    guests: room.guests.map((g, gIdx) => {
+                        const isLead = (idx === 0 && gIdx === 0);
+                        return {
+                            title: g.salutation || "Mr",
+                            firstName: g.firstName,
+                            lastName: g.lastName,
+                            isLeadGuest: isLead,
+                            type: g.type,
+                            email: isLead ? contactInfo.email : "",
+                            contactNumber: isLead ? contactInfo.phone : "",
+                            isdCode: "91", // Defaulting for MVP
+                            age: g.age || (g.type === "Adult" ? 30 : 10),
+                            passportNumber: "",
+                            passportExpiry: "",
+                            passportIssue: ""
+                        } as BookHotelGuest;
+                    })
+                };
+            });
+
+            const payload: BookHotelPayload = {
+                traceId: traceId,
+                hotelId: hotelId,
+                roomDetails: roomsPayload,
+                specialRequests: specialRequest ? [{ description: specialRequest }] : [],
+                recommendationId: roomId, // Using roomId/optionId as recommendationId
+                optionId: roomId
+            };
+
+            // Call Booking API
+            const bookRes = await fetch(appApiPaths.book, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const bookJson: any = await bookRes.json();
+
+            if (!bookRes.ok || bookJson.error) {
+                throw new Error(bookJson.error || bookJson.message || "Booking failed at provider.");
             }
 
-            // Success -> Redirect to Booking Status
-            router.push("/hotel/booking/status");
-        } else {
-            setErrorMessage(result.error || "Something went wrong during price check.");
+            const bookingResponse = bookJson as BookHotelResponse;
+
+            // Success -> Redirect
+            // Extract Booking ID from response (Itinerary Code or Booking Ref ID)
+            const resultItem = bookingResponse.results?.[0];
+            const confirmedBookingId = resultItem?.data?.[0]?.bookingRefId || resultItem?.itineraryCode;
+
+            if (!confirmedBookingId) {
+                throw new Error("Booking successful but no Booking ID returned.");
+            }
+
+            router.push(`/hotel/booking/status?bookingId=${confirmedBookingId}&traceId=${traceId}&checkIn=${searchParams.get("checkIn")}&checkOut=${searchParams.get("checkOut")}`);
+
+        } catch (err) {
+            console.error("Booking Error:", err);
+            setBookingLoading(false);
+            setErrorMessage(err instanceof Error ? err.message : "Booking could not be processed.");
             setErrorModalOpen(true);
         }
     };
 
-    const handleAcceptNewPrice = () => {
-        if (newPrice && selectedRate) {
-            setSelectedRateState({ ...selectedRate, price: newPrice });
-        }
-        setPriceChangeModalOpen(false);
-        // Continue flow -> Redirect
-        router.push("/hotel/booking/status");
-    };
+
 
     useEffect(() => {
         // Intercept browser back button for safeguards
@@ -299,7 +388,7 @@ export default function ReviewBookingPage() {
                                                 </div>
                                                 <div className="w-px h-4 bg-gray-300"></div>
                                                 <div className="font-medium text-gray-700">
-                                                    {occupancies.reduce((acc, curr) => acc + Number(curr.numOfAdults) + (curr.childAges?.length || 0), 0)} Guests
+                                                    {occupancies.reduce((acc: number, curr: any) => acc + Number(curr.numOfAdults) + (curr.childAges?.length || 0), 0)} Guests
                                                 </div>
                                             </div>
 
@@ -385,33 +474,17 @@ export default function ReviewBookingPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Price Change Modal */}
-            <AlertDialog open={priceChangeModalOpen} onOpenChange={setPriceChangeModalOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Price Change Alert</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            The price of your selected room has changed from
-                            <span className="font-bold mx-1">{selectedRate.currency} {selectedRate.price}</span>
-                            to
-                            <span className="font-bold mx-1">{selectedRate.currency} {newPrice}</span>.
-                            Do you want to proceed with the new price?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleAcceptNewPrice}>Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+
 
             <GenericErrorModal
                 open={errorModalOpen}
-                title="Price Check Failed"
+                title="Booking Failed"
                 message={errorMessage}
                 actionLabel="Close"
                 onAction={() => setErrorModalOpen(false)}
             />
+
+            <BookingLoader open={bookingLoading} />
         </div>
     );
 }

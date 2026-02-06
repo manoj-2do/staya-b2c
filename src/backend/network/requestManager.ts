@@ -4,7 +4,7 @@
  * All request/response logging lives here (no duplication in auth or location search).
  */
 
-import { getCachedTokens, refreshAppToken } from "@/backend/auth/travclanAuth";
+import { getCachedTokens, refreshAppToken, getAppToken } from "@/backend/auth/travclanAuth";
 import type { TravClanAuthResponse } from "@/backend/auth/travclanAuth";
 import { env } from "@/frontend/core/config/env";
 
@@ -36,16 +36,33 @@ function getAccessToken(): string | null {
 /** Auth Interceptor: get refresh token and call refresh API; saves new tokens to file. Returns true if new token available. */
 async function refreshAndSaveToken(): Promise<boolean> {
   const refreshToken = getRefreshTokenFromTokens(getCachedTokens());
+
   if (!refreshToken) {
-    console.log("[BE] requestManager: no refresh_token, cannot refresh");
+    console.log("[BE] requestManager: no refresh_token, attempting full login");
+    const loginResult = await getAppToken();
+    if (loginResult.ok) {
+      console.log("[BE] requestManager: full login successful");
+      return true;
+    }
+    console.log("[BE] requestManager: full login failed", loginResult.error);
     return false;
   }
+
   console.log("[BE] requestManager: 401 → refreshing token");
   const result = await refreshAppToken(refreshToken);
+
   if (!result.ok) {
     console.log("[BE] requestManager: refresh failed", result.error);
+    console.log("[BE] requestManager: attempting full login as fallback");
+    const loginFallback = await getAppToken();
+    if (loginFallback.ok) {
+      console.log("[BE] requestManager: fallback login successful");
+      return true;
+    }
+    console.log("[BE] requestManager: fallback login failed", loginFallback.error);
     return false;
   }
+
   console.log("[BE] requestManager: token refreshed, retrying request");
   return true;
 }

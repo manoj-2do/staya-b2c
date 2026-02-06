@@ -148,7 +148,7 @@ export function SupportModal({ open, onClose }: SupportModalProps) {
                     {/* Footer */}
                     <div className="p-6 border-t border-border bg-muted/20">
                         <p className="text-xs text-center text-muted-foreground">
-                            © 2026 Staya Inc. All rights reserved.
+                            © 2026 Snap Inc. All rights reserved.
                         </p>
                     </div>
                 </div>

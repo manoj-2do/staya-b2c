@@ -16,7 +16,7 @@ export interface Guest {
 export interface ContactInfo {
     email: string;
     phone: string;
-    countryCode: string; // e.g. +91
+    countryCode: string;
 }
 
 export interface RoomGuests {

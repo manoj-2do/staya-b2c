@@ -123,13 +123,12 @@ export function HotelDetailsScene({ hotelId, traceId }: HotelDetailsSceneProps) 
                     </div>
                 </div>
 
-                {/* Images Grid - Commented out as requested
-                {images && images.length > 0 ? (
+                {/* {/* Images Grid - Commented out as requested */}
+                {/* {images && images.length > 0 ? (
                     <HotelImageGrid images={images} />
                 ) : (
                     !isLoadingStatic && <div className="h-64 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">No images available</div>
-                )}
-                */}
+                )} */}
 
                 {/* content grid layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-8">

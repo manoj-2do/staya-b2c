@@ -151,7 +151,6 @@ export function BookingSummaryCard({ hotelId, traceId, selectedRoom, className }
                         {loading ? (
                             <>
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Checking rates...
                             </>
                         ) : (
                             "Continue"
