@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
         const payload = body as PriceCheckPayload;
         const result = await postPriceCheck(payload);
-
+        console.log("Result: ", result);
         if (result.ok) {
             return NextResponse.json(result.data);
         }

@@ -39,3 +39,14 @@ export function getSelectedHotel() {
 export function getGlobalTraceId(): string | null {
     return _traceId;
 }
+
+// Runtime store for selected room/rate to pass to booking flow
+let _selectedRate: any | null = null; // Using any to avoid circular dependency with ViewModels, or we can type it if moved
+
+export function setSelectedRate(rate: any | null) {
+    _selectedRate = rate;
+}
+
+export function getSelectedRate() {
+    return _selectedRate;
+}

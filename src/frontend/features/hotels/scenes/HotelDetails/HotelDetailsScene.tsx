@@ -156,7 +156,11 @@ export function HotelDetailsScene({ hotelId, traceId }: HotelDetailsSceneProps) 
                     <div className="hidden lg:block relative">
                         <div className="sticky top-24">
                             <div className="mb-4">
-                                <BookingSummaryCard selectedRoom={selectedRoom} />
+                                <BookingSummaryCard
+                                    selectedRoom={selectedRoom}
+                                    hotelId={hotelId}
+                                    traceId={traceId}
+                                />
                             </div>
                         </div>
                     </div>

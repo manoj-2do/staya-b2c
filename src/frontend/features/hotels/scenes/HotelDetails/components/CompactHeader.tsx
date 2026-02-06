@@ -94,7 +94,7 @@ export function CompactHeader() {
                         </div>
 
                         {/* Search Bar - Compact Trigger */}
-                        <div className="flex-1 max-w-2xl px-4 lg:px-8">
+                        <div className="flex-1 max-w-[30vw] px-4 lg:px-8">
                             <div className="relative">
                                 <div
                                     className="flex items-center w-full h-10 px-4 rounded-full border border-gray-300 bg-white shadow-sm hover:shadow-md cursor-pointer transition-all"
@@ -106,7 +106,7 @@ export function CompactHeader() {
                                     <div className="flex-1 truncate text-sm font-medium text-gray-900 border-r border-gray-300 pr-4 mr-4 hidden sm:block">
                                         Any week
                                     </div>
-                                    <div className="flex-1 truncate text-sm font-medium text-gray-900 border-r border-gray-300 pr-4 mr-4 hidden sm:block">
+                                    <div className="flex-1 truncate text-sm font-medium text-gray-900 border-gray-300 pr-4 mr-4 hidden sm:block">
                                         Add guests
                                     </div>
                                 </div>
