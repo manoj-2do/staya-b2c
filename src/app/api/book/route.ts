@@ -5,13 +5,13 @@
 
 import { NextResponse } from "next/server";
 import { postBookHotel } from "@/backend/hotels/postBookHotel";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
 import type { BookHotelPayload } from "@/frontend/features/hotels/models/BookHotel";
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
 
-        // Basic validation could happen here
         if (!body || !body.hotelId || !body.roomDetails) {
             return NextResponse.json(
                 { error: "Invalid booking payload" },
@@ -19,16 +19,18 @@ export async function POST(request: Request) {
             );
         }
 
+        const accessToken = getAccessTokenFromRequest(request);
         const payload = body as BookHotelPayload;
-        const result = await postBookHotel(payload);
+        const result = await postBookHotel(payload, accessToken);
+        const headers = responseHeadersWithNewToken(result.newAccessToken);
 
         if (result.ok) {
-            return NextResponse.json(result.data);
+            return NextResponse.json(result.data, { headers });
         }
 
         return NextResponse.json(
             { error: result.error, details: result.details },
-            { status: result.status }
+            { status: result.status, headers }
         );
 
     } catch (err) {

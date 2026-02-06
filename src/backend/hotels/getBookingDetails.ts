@@ -9,15 +9,16 @@ import { travclanPaths } from "@/backend/apiPaths";
 import { BookingDetails, BookingGuest, SelectedRoomAndRate } from "@/frontend/features/hotels/models/BookingDetails";
 
 export type GetBookingDetailsResult =
-    | { ok: true; data: BookingDetails }
-    | { ok: false; status: number; error: string; details?: unknown };
+    | { ok: true; data: BookingDetails; newAccessToken?: string }
+    | { ok: false; status: number; error: string; details?: unknown; newAccessToken?: string };
 
 /**
  * Fetches booking details from TravClan API.
  */
 export async function getBookingDetails(
     bookingId: string,
-    traceId: string
+    traceId: string,
+    accessToken?: string | null
 ): Promise<GetBookingDetailsResult> {
     const base = (env.travclan.apiBaseUrl ?? "").replace(/\/$/, "");
     const url = `${base}/${travclanPaths.bookingDetails}/${bookingId}`;
@@ -36,6 +37,7 @@ export async function getBookingDetails(
         method: "GET",
         url,
         headers: headers,
+        accessToken,
     });
 
     if (result.status >= 200 && result.status < 300) {
@@ -129,6 +131,7 @@ export async function getBookingDetails(
             return {
                 ok: true,
                 data: bookingDetails,
+                ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
             };
         } else {
             return {
@@ -145,5 +148,6 @@ export async function getBookingDetails(
         status: result.status,
         error: "API request failed",
         details: result.errorBody || result.data,
+        ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
     };
 }

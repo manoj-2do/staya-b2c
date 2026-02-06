@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { getHotelStaticContent } from "@/backend/hotels/getHotelStaticContent";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
 
 interface RouteParams {
     params: {
@@ -23,15 +24,17 @@ export async function GET(request: Request, { params }: RouteParams) {
             );
         }
 
-        const result = await getHotelStaticContent(hotelId);
+        const accessToken = getAccessTokenFromRequest(request);
+        const result = await getHotelStaticContent(hotelId, accessToken);
+        const headers = responseHeadersWithNewToken(result.newAccessToken);
 
         if (result.ok) {
-            return NextResponse.json(result.data);
+            return NextResponse.json(result.data, { headers });
         }
 
         return NextResponse.json(
             { error: result.error, details: result.details },
-            { status: result.status }
+            { status: result.status, headers }
         );
     } catch (err) {
         console.error("[API] hotel-static-content:", err);

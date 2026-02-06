@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { postPriceCheck } from "@/backend/hotels/postPriceCheck";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
 import type { PriceCheckPayload } from "@/frontend/features/home/models/PriceCheck";
 
 export async function POST(request: Request) {
@@ -18,15 +19,18 @@ export async function POST(request: Request) {
             );
         }
 
+        const accessToken = getAccessTokenFromRequest(request);
         const payload = body as PriceCheckPayload;
-        const result = await postPriceCheck(payload);
+        const result = await postPriceCheck(payload, accessToken);
+        const headers = responseHeadersWithNewToken(result.newAccessToken);
+
         if (result.ok) {
-            return NextResponse.json(result.data);
+            return NextResponse.json(result.data, { headers });
         }
 
         return NextResponse.json(
             { error: result.error, details: result.details },
-            { status: result.status }
+            { status: result.status, headers }
         );
     } catch (err) {
         console.error("[API] check-price:", err);

@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { postRoomsAndRates } from "@/backend/hotels/postRoomsAndRates";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
 import type { RoomsAndRatesPayload } from "@/frontend/features/home/models/RoomsAndRates";
 
 export async function POST(request: Request) {
@@ -18,16 +19,18 @@ export async function POST(request: Request) {
             );
         }
 
+        const accessToken = getAccessTokenFromRequest(request);
         const payload = body as RoomsAndRatesPayload;
-        const result = await postRoomsAndRates(payload);
+        const result = await postRoomsAndRates(payload, accessToken);
+        const headers = responseHeadersWithNewToken(result.newAccessToken);
 
         if (result.ok) {
-            return NextResponse.json(result.data);
+            return NextResponse.json(result.data, { headers });
         }
 
         return NextResponse.json(
             { error: result.error, details: result.details },
-            { status: result.status }
+            { status: result.status, headers }
         );
     } catch (err) {
         console.error("[API] rooms-and-rates:", err);

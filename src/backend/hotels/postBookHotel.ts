@@ -9,11 +9,12 @@ import { travclanPaths } from "@/backend/apiPaths";
 import type { BookHotelPayload, BookHotelResponse } from "@/frontend/features/hotels/models/BookHotel";
 
 export type PostBookHotelResult =
-    | { ok: true; data: BookHotelResponse }
-    | { ok: false; status: number; error: string; details?: unknown };
+    | { ok: true; data: BookHotelResponse; newAccessToken?: string }
+    | { ok: false; status: number; error: string; details?: unknown; newAccessToken?: string };
 
 export async function postBookHotel(
-    payload: BookHotelPayload
+    payload: BookHotelPayload,
+    accessToken?: string | null
 ): Promise<PostBookHotelResult> {
     const base = (env.travclan.voltLiteApiUrl ?? "").replace(/\/$/, "");
     const url = `${base}/${travclanPaths.book}`;
@@ -25,15 +26,17 @@ export async function postBookHotel(
         url,
         body: JSON.stringify(payload),
         headers: {
-            "Authorization-Type": "external-service", // Explicitly ensuring this
+            "Authorization-Type": "external-service",
             source: "website"
-        }
+        },
+        accessToken,
     });
 
     if (result.status >= 200 && result.status < 300 && result.data) {
         return {
             ok: true,
             data: result.data,
+            ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
         };
     }
 
@@ -42,5 +45,6 @@ export async function postBookHotel(
         status: result.status,
         error: "Booking failed",
         details: result.errorBody,
+        ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
     };
 }

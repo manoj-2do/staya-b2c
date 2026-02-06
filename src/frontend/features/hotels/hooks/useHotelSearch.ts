@@ -8,6 +8,7 @@ import type {
 } from "../models/HotelSearchResponse";
 import type { HotelSearchPayload } from "@/frontend/features/home/models/HotelSearch";
 import { apiPaths } from "@/frontend/core/config/apiPaths";
+import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
 import { env } from "@/frontend/core/config/env";
 import { getMockHotelSearchResponse } from "@/mock-data/hotelSearchResponse";
 import { setGlobalTraceId } from "@/frontend/core/store/searchStore";
@@ -65,7 +66,7 @@ export function useHotelSearch(
         await new Promise((r) => setTimeout(r, 2000));
         response = getMockHotelSearchResponse(1, 5);
       } else {
-        const res = await fetch(apiPaths.hotelSearch, {
+        const res = await fetchWithAuth(apiPaths.hotelSearch, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...searchPayload, page: 1 }),
@@ -132,7 +133,7 @@ export function useHotelSearch(
         await new Promise((r) => setTimeout(r, 400));
         response = getMockHotelSearchResponse(nextPage, 5);
       } else {
-        const res = await fetch(apiPaths.hotelSearch, {
+        const res = await fetchWithAuth(apiPaths.hotelSearch, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

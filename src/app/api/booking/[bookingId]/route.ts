@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { getBookingDetails } from "@/backend/hotels/getBookingDetails";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
 
 export async function GET(
     request: Request,
@@ -31,15 +32,17 @@ export async function GET(
     }
 
     try {
-        const result = await getBookingDetails(bookingId, traceId);
+        const accessToken = getAccessTokenFromRequest(request);
+        const result = await getBookingDetails(bookingId, traceId, accessToken);
+        const headers = responseHeadersWithNewToken(result.newAccessToken);
 
         if (result.ok) {
-            return NextResponse.json(result.data);
+            return NextResponse.json(result.data, { headers });
         }
 
         return NextResponse.json(
             { error: result.error, details: result.details },
-            { status: result.status }
+            { status: result.status, headers }
         );
     } catch (err) {
         console.error("[API] booking/details:", err);

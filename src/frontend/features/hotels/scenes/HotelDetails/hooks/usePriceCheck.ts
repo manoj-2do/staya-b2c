@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { appApiPaths } from "@/backend/apiPaths";
+import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
 
 import { PriceCheckPayload } from "@/frontend/features/home/models/PriceCheck";
 import { PriceCheckResponse, PriceCheckResults } from "@/frontend/features/hotels/models/PriceCheckResponse";
@@ -15,7 +16,7 @@ export function usePriceCheck(): UsePriceCheckResult {
     const checkPrice = async (payload: PriceCheckPayload) => {
         setLoading(true);
         try {
-            const res = await fetch(appApiPaths.checkPrice, {
+            const res = await fetchWithAuth(appApiPaths.checkPrice, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

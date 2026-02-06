@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { appApiPaths } from "@/backend/apiPaths";
+import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
 import { BookingDetails } from "@/frontend/features/hotels/models/BookingDetails";
 import { BookingSuccess } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingSuccess";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import { CompactHeader } from "@/frontend/features/hotels/scenes/HotelDetails/components/CompactHeader";
 
-export default function BookingStatusPage() {
+function BookingStatusContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -32,7 +33,7 @@ export default function BookingStatusPage() {
                 const bookingId = bookingIdParam || "booking-code-1";
                 const traceId = traceIdParam || "demo-trace-id";
 
-                const response = await fetch(`${appApiPaths.bookingDetails}/${bookingId}?traceId=${traceId}`);
+                const response = await fetchWithAuth(`${appApiPaths.bookingDetails}/${bookingId}?traceId=${traceId}`);
 
                 if (!response.ok) {
                     throw new Error("Failed to fetch booking details");
@@ -101,5 +102,21 @@ export default function BookingStatusPage() {
                 />
             </main>
         </div>
+    );
+}
+
+export default function BookingStatusPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white flex flex-col font-sans">
+                <CompactHeader />
+                <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                    <p className="text-gray-500 font-medium">Loading...</p>
+                </div>
+            </div>
+        }>
+            <BookingStatusContent />
+        </Suspense>
     );
 }

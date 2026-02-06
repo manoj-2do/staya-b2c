@@ -10,14 +10,15 @@ import { travclanPaths } from "@/backend/apiPaths";
 import type { RoomsAndRatesPayload } from "@/frontend/features/home/models/RoomsAndRates";
 
 export type PostRoomsAndRatesResult =
-    | { ok: true; data: unknown }
-    | { ok: false; status: number; error: string; details?: unknown };
+    | { ok: true; data: unknown; newAccessToken?: string }
+    | { ok: false; status: number; error: string; details?: unknown; newAccessToken?: string };
 
 /**
  * Sends rooms and rates request to TravClan API.
  */
 export async function postRoomsAndRates(
-    payload: RoomsAndRatesPayload
+    payload: RoomsAndRatesPayload,
+    accessToken?: string | null
 ): Promise<PostRoomsAndRatesResult> {
     const base = (env.travclan.voltLiteApiUrl ?? "").replace(/\/$/, "");
     const url = `${base}/${travclanPaths.roomsAndRates}`;
@@ -29,12 +30,14 @@ export async function postRoomsAndRates(
         url,
         headers: {},
         body: JSON.stringify(payload),
+        accessToken,
     });
 
     if (result.status >= 200 && result.status < 300) {
         return {
             ok: true,
             data: result.data ?? {},
+            ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
         };
     }
 
@@ -46,5 +49,6 @@ export async function postRoomsAndRates(
                 ? "Authentication required. Please try again."
                 : "Getting rooms and rates failed",
         details: result.errorBody,
+        ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
     };
 }

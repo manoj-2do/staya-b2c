@@ -54,9 +54,18 @@ function saveTokensToFile(data: TravClanAuthResponse): void {
 /** In-memory server cache for tokens (set after login/refresh). */
 const serverTokenCache = new Map<string, TravClanAuthResponse>();
 
+/** Server-side refresh token — persists across requests within same Node process (warm instances). */
+let serverRefreshToken: string | null = null;
+
 export function setServerTokenCache(data: TravClanAuthResponse): void {
   serverTokenCache.set(SERVER_TOKEN_CACHE_KEY, data);
   saveTokensToFile(data);
+  const rt = (data as Record<string, unknown>).refresh_token ?? (data as Record<string, unknown>).RefreshToken;
+  if (typeof rt === "string") serverRefreshToken = rt;
+}
+
+export function getServerRefreshToken(): string | null {
+  return serverRefreshToken;
 }
 
 /** Returns tokens from memory, or loads from file if memory is empty. Only calls login when no tokens present. */

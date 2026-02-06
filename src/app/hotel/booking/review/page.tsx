@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CompactHeader } from "@/frontend/features/hotels/scenes/HotelDetails/components/CompactHeader";
 import { BookingSteps } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingSteps";
@@ -22,12 +22,13 @@ import {
     AlertDialogTitle,
 } from "@/frontend/components/ui/alert-dialog";
 import { appApiPaths } from "@/backend/apiPaths";
+import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
 import { BookingLoader } from "@/frontend/features/hotels/scenes/HotelBooking/components/BookingLoader";
 import type { BookHotelPayload, BookHotelGuest, BookHotelResponse } from "@/frontend/features/hotels/models/BookHotel";
 import { GenericErrorModal } from "@/frontend/components/common/GenericErrorModal";
 import { getSearchPayload } from "@/frontend/features/hotels/utils/searchParams";
 
-export default function ReviewBookingPage() {
+function ReviewBookingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { checkPrice, loading: priceLoading } = usePriceCheck();
@@ -248,7 +249,7 @@ export default function ReviewBookingPage() {
             };
 
             // Call Booking API
-            const bookRes = await fetch(appApiPaths.book, {
+            const bookRes = await fetchWithAuth(appApiPaths.book, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -486,5 +487,18 @@ export default function ReviewBookingPage() {
 
             <BookingLoader open={bookingLoading} />
         </div>
+    );
+}
+
+export default function ReviewBookingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex flex-col font-sans items-center justify-center">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                <p className="text-gray-500 font-medium mt-4">Loading...</p>
+            </div>
+        }>
+            <ReviewBookingContent />
+        </Suspense>
     );
 }

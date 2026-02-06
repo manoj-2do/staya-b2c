@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { postHotelSearch } from "@/backend/hotels/postHotelSearch";
+import { getAccessTokenFromRequest, responseHeadersWithNewToken } from "@/backend/utils/apiResponse";
 import type { HotelSearchPayload } from "@/frontend/features/home/models/HotelSearch";
 
 export async function POST(request: Request) {
@@ -19,16 +20,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const accessToken = getAccessTokenFromRequest(request);
     const payload = body as HotelSearchPayload;
-    const result = await postHotelSearch(payload);
+    const result = await postHotelSearch(payload, accessToken);
+    const headers = responseHeadersWithNewToken(result.newAccessToken);
 
     if (result.ok) {
-      return NextResponse.json(result.data);
+      return NextResponse.json(result.data, { headers });
     }
 
     return NextResponse.json(
       { error: result.error, details: result.details },
-      { status: result.status }
+      { status: result.status, headers }
     );
   } catch (err) {
     console.error("[API] hotel-search:", err);

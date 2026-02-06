@@ -10,14 +10,15 @@ import { travclanPaths } from "@/backend/apiPaths";
 import type { PriceCheckPayload } from "@/frontend/features/home/models/PriceCheck";
 
 export type PostPriceCheckResult =
-    | { ok: true; data: unknown }
-    | { ok: false; status: number; error: string; details?: unknown };
+    | { ok: true; data: unknown; newAccessToken?: string }
+    | { ok: false; status: number; error: string; details?: unknown; newAccessToken?: string };
 
 /**
  * Sends price check request to TravClan API.
  */
 export async function postPriceCheck(
-    payload: PriceCheckPayload
+    payload: PriceCheckPayload,
+    accessToken?: string | null
 ): Promise<PostPriceCheckResult> {
     const base = (env.travclan.voltLiteApiUrl ?? "").replace(/\/$/, "");
     const url = `${base}/${travclanPaths.checkPrice}`;
@@ -29,12 +30,14 @@ export async function postPriceCheck(
         url,
         headers: {},
         body: JSON.stringify(payload),
+        accessToken,
     });
 
     if (result.status >= 200 && result.status < 300) {
         return {
             ok: true,
             data: result.data ?? {},
+            ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
         };
     }
 
@@ -46,5 +49,6 @@ export async function postPriceCheck(
                 ? "Authentication required. Please try again."
                 : "Price check failed",
         details: result.errorBody,
+        ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
     };
 }

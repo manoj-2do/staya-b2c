@@ -4,7 +4,7 @@
  * All request/response logging lives here (no duplication in auth or location search).
  */
 
-import { getCachedTokens, refreshAppToken, getAppToken } from "@/backend/auth/travclanAuth";
+import { getServerRefreshToken, refreshAppToken, getAppToken } from "@/backend/auth/travclanAuth";
 import type { TravClanAuthResponse } from "@/backend/auth/travclanAuth";
 import { env } from "@/frontend/core/config/env";
 
@@ -19,33 +19,22 @@ function getAccessTokenFromTokens(
   return typeof v === "string" ? v : null;
 }
 
-function getRefreshTokenFromTokens(
-  tokens: TravClanAuthResponse | null
-): string | null {
-  if (!tokens) return null;
-  const t = tokens as Record<string, unknown>;
-  const v = t.refresh_token ?? t.RefreshToken;
-  return typeof v === "string" ? v : null;
+function getAccessTokenFromResponse(tokens: TravClanAuthResponse | null): string | null {
+  return getAccessTokenFromTokens(tokens);
 }
 
-/** Auth Interceptor: get current access token from cache/file. Used only inside request manager to attach token to requests. */
-function getAccessToken(): string | null {
-  return getAccessTokenFromTokens(getCachedTokens());
-}
-
-/** Auth Interceptor: get refresh token and call refresh API; saves new tokens to file. Returns true if new token available. */
-async function refreshAndSaveToken(): Promise<boolean> {
-  const refreshToken = getRefreshTokenFromTokens(getCachedTokens());
+/** Uses server-stored refresh token to refresh; returns new access token or null. */
+async function refreshAndGetNewToken(): Promise<string | null> {
+  const refreshToken = getServerRefreshToken();
 
   if (!refreshToken) {
-    console.log("[BE] requestManager: no refresh_token, attempting full login");
+    console.log("[BE] requestManager: no server refresh_token, attempting full login");
     const loginResult = await getAppToken();
     if (loginResult.ok) {
-      console.log("[BE] requestManager: full login successful");
-      return true;
+      return getAccessTokenFromResponse(loginResult.data);
     }
     console.log("[BE] requestManager: full login failed", loginResult.error);
-    return false;
+    return null;
   }
 
   console.log("[BE] requestManager: 401 → refreshing token");
@@ -53,18 +42,14 @@ async function refreshAndSaveToken(): Promise<boolean> {
 
   if (!result.ok) {
     console.log("[BE] requestManager: refresh failed", result.error);
-    console.log("[BE] requestManager: attempting full login as fallback");
     const loginFallback = await getAppToken();
     if (loginFallback.ok) {
-      console.log("[BE] requestManager: fallback login successful");
-      return true;
+      return getAccessTokenFromResponse(loginFallback.data);
     }
-    console.log("[BE] requestManager: fallback login failed", loginFallback.error);
-    return false;
+    return null;
   }
 
-  console.log("[BE] requestManager: token refreshed, retrying request");
-  return true;
+  return getAccessTokenFromResponse(result.data);
 }
 
 export interface RequestConfig {
@@ -72,12 +57,16 @@ export interface RequestConfig {
   url: string;
   headers?: Record<string, string>;
   body?: string;
+  /** Access token from frontend (Authorization header). Required for TravClan API calls. */
+  accessToken?: string | null;
 }
 
 export interface RequestResult<T = unknown> {
   status: number;
   data?: T;
   errorBody?: unknown;
+  /** Set when we refreshed token on 401 — API route should forward via X-New-Access-Token header */
+  newAccessToken?: string;
 }
 
 function logRequest(
@@ -115,17 +104,34 @@ function logResponse(
 }
 
 /**
+ * Obtains an access token when none was provided. Uses server refresh token or full login.
+ * TravClan API requires Authorization on every request; we must never send without it.
+ */
+async function ensureAccessTokenForRequest(): Promise<string | null> {
+  return refreshAndGetNewToken();
+}
+
+/**
  * Sends a request with Auth Interceptor:
- * - Adds Authorization header from cached token (file/memory).
- * - If response status is 401: refreshes token (saves to file), then retries the request once with new token.
- * - All logging (request curl, response status) is done here.
+ * - Uses accessToken from caller (from frontend request header).
+ * - If caller provides no token: obtains one via login/refresh before sending.
+ * - If response status is 401: refreshes using server refresh token, retries, returns newAccessToken for frontend.
  */
 export async function request<T = unknown>(
   config: RequestConfig
 ): Promise<RequestResult<T>> {
-  const { method, url, headers: configHeaders = {}, body } = config;
+  const { method, url, headers: configHeaders = {}, body, accessToken: callerToken } = config;
 
-  let accessToken = getAccessToken();
+  let accessToken = callerToken ?? null;
+  let obtainedTokenForCaller: string | undefined;
+  if (!accessToken) {
+    accessToken = await ensureAccessTokenForRequest();
+    if (accessToken) obtainedTokenForCaller = accessToken;
+    else {
+      logResponse("Auth failed", 401, undefined, { message: "Could not obtain access token (login/refresh failed)" });
+      return { status: 401, errorBody: { message: "Authentication failed. Please try again." } };
+    }
+  }
   const defaultHeaders = {
     "Content-Type": "application/json",
     accept: "application/json",
@@ -159,41 +165,47 @@ export async function request<T = unknown>(
     );
 
     if (res.status === 401) {
-      const refreshed = await refreshAndSaveToken();
-      if (refreshed) {
-        accessToken = getAccessToken();
-        if (accessToken) {
-          const retryHeaders: Record<string, string> = {
-            ...configHeaders,
-            Authorization: `Bearer ${accessToken}`,
-          };
-          logRequest(method, url, retryHeaders, body != null);
-          const retryRes = await fetch(url, {
-            method,
-            headers: retryHeaders,
-            ...(body != null ? { body } : {}),
-            next: { revalidate: 0 },
-          });
-          const retryData = await retryRes.json().catch(() => ({}));
-          logResponse(
-            "Retry response",
-            retryRes.status,
-            retryRes.ok ? retryData : undefined,
-            retryRes.ok ? undefined : retryData
-          );
-          if (retryRes.ok) {
-            return { status: retryRes.status, data: retryData as T };
-          }
-          return { status: retryRes.status, errorBody: retryData };
+      const newToken = await refreshAndGetNewToken();
+      if (newToken) {
+        const retryHeaders: Record<string, string> = {
+          ...defaultHeaders,
+          ...configHeaders,
+          Authorization: `Bearer ${newToken}`,
+        };
+        logRequest(method, url, retryHeaders, body != null);
+        const retryRes = await fetch(url, {
+          method,
+          headers: retryHeaders,
+          ...(body != null ? { body } : {}),
+          next: { revalidate: 0 },
+        });
+        const retryData = await retryRes.json().catch(() => ({}));
+        logResponse(
+          "Retry response",
+          retryRes.status,
+          retryRes.ok ? retryData : undefined,
+          retryRes.ok ? undefined : retryData
+        );
+        if (retryRes.ok) {
+          return { status: retryRes.status, data: retryData as T, newAccessToken: newToken };
         }
+        return { status: retryRes.status, errorBody: retryData };
       }
       return { status: 401, errorBody: data };
     }
 
     if (res.ok) {
-      return { status: res.status, data: data as T };
+      return {
+        status: res.status,
+        data: data as T,
+        ...(obtainedTokenForCaller && { newAccessToken: obtainedTokenForCaller }),
+      };
     }
-    return { status: res.status, errorBody: data };
+    return {
+      status: res.status,
+      errorBody: data,
+      ...(obtainedTokenForCaller && { newAccessToken: obtainedTokenForCaller }),
+    };
   } catch (err) {
     console.log("[BE] requestManager — request failed", err);
     return {

@@ -12,8 +12,8 @@ import type {
 } from "@/frontend/features/home/models/LocationSearch";
 
 export type GetLocationsSearchResult =
-  | { ok: true; data: LocationSearchResponse }
-  | { ok: false; status: number; error: string; details?: unknown };
+  | { ok: true; data: LocationSearchResponse; newAccessToken?: string }
+  | { ok: false; status: number; error: string; details?: unknown; newAccessToken?: string };
 
 function buildSearchUrl(
   base: string,
@@ -28,10 +28,10 @@ function buildSearchUrl(
 
 /**
  * Fetches location search results from TravClan API.
- * Uses network manager: token from file, on 401 refresh and retry (handled in requestManager).
  */
 export async function getLocationsSearch(
-  searchString: string
+  searchString: string,
+  accessToken?: string | null
 ): Promise<GetLocationsSearchResult> {
   const base = (env.travclan.apiBaseUrl ?? "").replace(/\/$/, "");
   const path = travclanPaths.locationsSearch;
@@ -42,7 +42,7 @@ export async function getLocationsSearch(
   >({
     method: "GET",
     url,
-
+    accessToken,
   });
 
   if (result.status >= 200 && result.status < 300 && result.data) {
@@ -55,6 +55,7 @@ export async function getLocationsSearch(
     return {
       ok: true,
       data: { ...parsed, results: list as LocationSearchResult[] },
+      ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
     };
   }
 
@@ -66,5 +67,6 @@ export async function getLocationsSearch(
         ? "Authentication required. Please try again."
         : "Locations search failed",
     details: result.errorBody,
+    ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
   };
 }

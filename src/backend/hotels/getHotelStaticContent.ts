@@ -14,13 +14,15 @@ export interface HotelStaticContentResult {
     data?: unknown;
     error?: string;
     details?: unknown;
+    newAccessToken?: string;
 }
 
 /**
  * Fetches hotel static content from TravClan API.
  */
 export async function getHotelStaticContent(
-    hotelId: string
+    hotelId: string,
+    accessToken?: string | null
 ): Promise<HotelStaticContentResult> {
     const base = (env.travclan.apiBaseUrl ?? "").replace(/\/$/, "");
     const path = `${travclanPaths.hotelBase}/${hotelId}/static-content-1`;
@@ -30,12 +32,14 @@ export async function getHotelStaticContent(
         method: "GET",
         url,
         headers: {},
+        accessToken,
     });
 
     if (result.status >= 200 && result.status < 300) {
         return {
             ok: true,
             data: result.data ?? {},
+            ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
         };
     }
 
@@ -47,5 +51,6 @@ export async function getHotelStaticContent(
                 ? "Authentication required. Please try again."
                 : "Getting hotel static content failed",
         details: result.errorBody,
+        ...(result.newAccessToken && { newAccessToken: result.newAccessToken }),
     };
 }

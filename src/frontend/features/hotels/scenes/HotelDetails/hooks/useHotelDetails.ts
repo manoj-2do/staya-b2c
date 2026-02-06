@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithAuth } from "@/frontend/core/auth/fetchWithAuth";
 import { HotelDetailViewModel, HotelHeaderViewModel, HotelImageViewModel, HotelInfoViewModel, RoomRateViewModel } from "../models/HotelDetailViewModel";
 import { HotelStaticContentResponse, HotelData } from "../models/HotelStaticContent";
 import { RoomsAndRatesResponse, HotelRate } from "../models/RoomsAndRatesResponse";
@@ -19,7 +20,7 @@ export function useHotelDetails(hotelId: string, traceId?: string): HotelDetailV
 
         async function fetchStaticContent() {
             try {
-                const res = await fetch(`/api/hotels/${hotelId}/static-content`, { signal });
+                const res = await fetchWithAuth(`/api/hotels/${hotelId}/static-content`, { signal });
                 const json = (await res.json()) as HotelStaticContentResponse;
 
                 if (json.code === 200 && json.results?.[0]?.data?.[0]) {
@@ -66,7 +67,7 @@ export function useHotelDetails(hotelId: string, traceId?: string): HotelDetailV
                     hotelId: hotelId
                 };
 
-                const res = await fetch('/api/rooms-and-rates', {
+                const res = await fetchWithAuth('/api/rooms-and-rates', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),

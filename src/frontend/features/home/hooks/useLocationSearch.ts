@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { locationsSearchAction } from "@/backend/locations/locationsSearchAction";
+import { ensureAccessToken, setAccessToken } from "@/frontend/core/auth/authToken";
 import type { LocationSearchResult } from "@/frontend/features/home/models/LocationSearch";
 
 export interface UseLocationSearchReturn {
@@ -33,8 +34,12 @@ export function useLocationSearch(
     }
     setLoading(true);
     setError(null);
-    const outcome = await locationsSearchAction(queryTrimmed);
+    const accessToken = await ensureAccessToken();
+    const outcome = await locationsSearchAction(queryTrimmed, accessToken);
     setLoading(false);
+    if (outcome.newAccessToken) {
+      setAccessToken(outcome.newAccessToken);
+    }
     if (outcome.ok) {
       setResults(outcome.results);
       setError(null);
