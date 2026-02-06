@@ -19,7 +19,6 @@ function BookingStatusContent() {
     // Ideally, the previous page should pass ?bookingId=...
     // For now, if not present, I will default to "booking-code-1" to satisfy the "Call this API" requirement for the demo.
     const bookingIdParam = searchParams.get("bookingId");
-    // Also need traceId for the API header
     const traceIdParam = searchParams.get("traceId");
 
     const [loading, setLoading] = useState(true);

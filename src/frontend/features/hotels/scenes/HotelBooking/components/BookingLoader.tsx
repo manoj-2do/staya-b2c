@@ -32,8 +32,7 @@ export const BookingLoader: React.FC<BookingLoaderProps> = ({ open }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center space-y-6 animate-in zoom-in-95 duration-300">
 
-                <div className="">
-                    {/* Loader → blue */}
+                <div className="flex justify-center">
                     <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
                 </div>
 

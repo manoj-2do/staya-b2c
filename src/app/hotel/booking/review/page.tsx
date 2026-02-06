@@ -264,15 +264,21 @@ function ReviewBookingContent() {
             const bookingResponse = bookJson as BookHotelResponse;
 
             // Success -> Redirect
-            // Extract Booking ID from response (Itinerary Code or Booking Ref ID)
+            // TravClan API expects bookingRefId (booking code) in the path
             const resultItem = bookingResponse.results?.[0];
-            const confirmedBookingId = resultItem?.data?.[0]?.bookingRefId || resultItem?.itineraryCode;
+            const bookingRefId = resultItem?.data?.[0]?.bookingRefId;
 
-            if (!confirmedBookingId) {
-                throw new Error("Booking successful but no Booking ID returned.");
+            if (!bookingRefId) {
+                throw new Error("Booking successful but no booking reference returned.");
             }
 
-            router.push(`/hotel/booking/status?bookingId=${confirmedBookingId}&traceId=${traceId}&checkIn=${searchParams.get("checkIn")}&checkOut=${searchParams.get("checkOut")}`);
+            const query = new URLSearchParams({
+                bookingId: bookingRefId,
+                traceId,
+                ...(searchParams.get("checkIn") && { checkIn: searchParams.get("checkIn")! }),
+                ...(searchParams.get("checkOut") && { checkOut: searchParams.get("checkOut")! }),
+            });
+            router.push(`/hotel/booking/status?${query.toString()}`);
 
         } catch (err) {
             console.error("Booking Error:", err);

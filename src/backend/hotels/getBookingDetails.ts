@@ -14,6 +14,9 @@ export type GetBookingDetailsResult =
 
 /**
  * Fetches booking details from TravClan API.
+ * @param bookingId - Booking code (bookingRefId) used in API path
+ * @param traceId - Request trace ID
+ * @param accessToken - Auth token
  */
 export async function getBookingDetails(
     bookingId: string,
@@ -108,8 +111,12 @@ export async function getBookingDetails(
                     };
                 }
 
+                const displayBookingCode =
+                    (hotelItinerary as Record<string, unknown>).bookingRefId ??
+                    (hotelItinerary as Record<string, unknown>).booking_ref_id ??
+                    bookingId;
                 bookingDetails = {
-                    bookingCode: bookingId,
+                    bookingCode: typeof displayBookingCode === "string" ? displayBookingCode : bookingId,
                     bookingStatus: results?.status || "Confirmed",
                     traceId: hotelItinerary.traceId,
                     itineraryCode: hotelItinerary.code,
